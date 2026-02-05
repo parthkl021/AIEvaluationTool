@@ -128,9 +128,11 @@
     },
     "ollama_comms" : {
         "reason_prompt" : "\n<|system|>\n <|system|> You are a reasoning model.\n Based on the input, the metric that the input was evaluated on, and a final continuous score between 0 and 1, explain the reasoning behind why the input received that score for the given metric. Your explanation should reference specific qualities of the input, relate them directly to the metric, and logically justify why the numerical score is appropriate. If additional information is provided (e.g., a definition of the metric, a reference output, or evaluation guidelines), you must explicitly incorporate it into your reasoning. Compare the input against this additional information where relevant, and reason how this comparison influenced the final score. Avoid generic statements and focus on metric-relevant evidence from the text.\n Return no additional information - only a dictionary of the form\n {{\"reason\":\"<reasoning for the score for the given metric>\"}}\n\n <|input|> {input_sent} \n <|metric|> {metric} \n <|additional information|> {add_info} \n <|score|> {score} \n\n <|assistant|>\n",
+        "metric_summary_prompt" : "\n<|system|>\nYou are an evaluation analyst.\nBased on the metric name and list of scores, provide a concise interpretation of the metric performance. Highlight main strength or weakness and comment on reliability based on number of cases.\nReturn only a dictionary in the form\n{{\"summary\":\"<2-3 sentence explanation>\"}}\n\n<|metric|> {metric}\n<|scores|> {scores}\n<|additional information|> {add_info}\n\n<|assistant|>\n",
+        "run_summary_prompt" : "\n<|system|>\nYou are producing an executive evaluation report.\nUsing the overview of all metrics, describe the overall quality of the test run, strongest and weakest areas, and confidence in conclusions.\nReturn only a dictionary in the form\n{{\"summary\":\"<3-4 sentence executive summary>\"}}\n\n<|overview|>\n{overview}\n<|additional information|> {add_info}\n\n<|assistant|>\n",
         "model_names" : ["qwen3:32b"],
         "n_tries": 3,
-        "reqd_flds" : ["reason"]
+        "reqd_flds" : ["white", "black"]
     },
     "entity_recognition" : {
         "model_reason" : true

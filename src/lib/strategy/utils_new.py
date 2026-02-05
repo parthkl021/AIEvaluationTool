@@ -220,15 +220,21 @@ class OllamaConnect:
                     final = {}
                 if(OllamaConnect.has_correct_format(final, fields)):
                     resp_in_format.append(final)
+                else:
+                    logger.error("Response does not contain the required fields or is not in the correct format.")
             tries -= 1
         return resp_in_format
     
     @staticmethod
     def has_correct_format(obj : Optional[dict], fields: List[str]):
-        correct = isinstance(obj, dict) 
-        for fld in fields:
-            correct = correct and fld in fields and isinstance(obj.get(fld), str) 
-        return correct
+        correct = isinstance(obj, dict)
+        distinct_set = set(list(obj.keys())).intersection(set(fields))
+        if len(distinct_set) > 0:
+            for fld in distinct_set:
+                correct = correct and fld in fields and isinstance(obj.get(fld), str) 
+            return correct
+        else:
+            return False
     
     @staticmethod
     def get_reason(agent_response:str, strategy_name:str, score:float, **kwargs):
@@ -246,3 +252,75 @@ class OllamaConnect:
             return final_rsn
         else:
             return "Could not get a proper reasoning for the score."
+        
+    @staticmethod
+    def get_metric_summary(metric_name: str, scores: float, **kwargs):
+        prompt = OllamaConnect.dflt_vals.metric_summary_prompt.format(
+            metric=metric_name,
+            scores=scores,
+            add_info=kwargs.get("add_info", "")
+        )
+
+        responses = OllamaConnect.prompt_model(
+            prompt,
+            OllamaConnect.dflt_vals.reqd_flds
+        )
+        print(responses)
+
+        final_summary = ""
+
+        if len(responses) > 0:
+            summaries = [r["summary"] for r in responses]
+
+            if len(summaries) == 1:
+                return f"{summaries[0]}"
+
+            for i, s in enumerate(summaries):
+                if i == 0:
+                    final_summary += f"Summary {i+1} : {s}"
+                else:
+                    final_summary += f"\n\n Summary {i+1} : {s}"
+
+            return final_summary
+        else:
+            return "Could not generate metric summary."
+
+    @staticmethod
+    def get_run_summary(score_card: dict, **kwargs):
+        overview = []
+
+        for plan, metrics in score_card.items():
+            for metric, data in metrics.items():
+                overview.append({
+                    "metric": metric,
+                    "average": data.get("Average"),
+                    "cases": len(data.get("Testcases", {}))
+                })
+
+        prompt = OllamaConnect.dflt_vals.run_summary_prompt.format(
+            overview=json.dumps(overview, indent=2),
+            add_info=kwargs.get("add_info", "")
+        )
+
+        responses = OllamaConnect.prompt_model(
+            prompt,
+            OllamaConnect.dflt_vals.reqd_flds
+        )
+
+        final_summary = ""
+
+        if len(responses) > 0:
+            summaries = [r["summary"] for r in responses]
+
+            if len(summaries) == 1:
+                return f"{summaries[0]}"
+
+            for i, s in enumerate(summaries):
+                if i == 0:
+                    final_summary += f"Summary {i+1} : {s}"
+                else:
+                    final_summary += f"\n\n Summary {i+1} : {s}"
+
+            return final_summary
+        else:
+            return "Could not generate run summary."

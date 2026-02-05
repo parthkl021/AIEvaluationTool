@@ -15,6 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__) + '/../../'))  # Adjust t
 
 from lib.orm.DB import DB
 from lib.utils import get_logger, get_logger_verbosity
+from lib.strategy.utils_new import OllamaConnect
 
 def main():
     # setup up logging
@@ -159,19 +160,31 @@ def main():
     table.add_column("Metric Name", style="magenta")
     table.add_column("Score (0-1)", style="green")
     
+    metric_scores = []
+    metric_names = []
     # iterate through the dictionary to create score summaries.
     for plan in score_card.keys():
         for metric in score_card[plan].keys():
+            metric_names.append(metric)
             scores = list(score_card[plan][metric]["Testcases"].values())
             avg_score = None
             if scores:
                 avg_score = round(sum(scores) / len(scores), 2)
+                metric_scores.append(avg_score)
                 
             score_card[plan][metric]["Average"] = avg_score
             table.add_row(plan, metric, str(avg_score) if avg_score != None else "N/A")
 
     print(json.dumps(score_card, indent=4))
     Console().print(table)
+    print(metric_scores)
+    print(metric_names)
+    
+    for i in range(len(metric_scores)):
+        score_card[detail.plan_name][metric_names[i]]["summary"] = OllamaConnect.get_metric_summary(metric_names[i], scores=metric_scores[i])
+    print(score_card[detail.plan_name][detail.metric_name]["summary"])
+    score_card["RunSummary"] = OllamaConnect.get_run_summary(score_card)
+    print(score_card["RunSummary"])
 
 if __name__ == "__main__":
     main()
