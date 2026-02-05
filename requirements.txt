@@ -58,3 +58,9 @@ python-dotenv
 Jinja2
 plotly
 tenacity
+
+rouge_score
+abs
+levenshtein
+stanza
+zss
