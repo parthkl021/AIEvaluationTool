@@ -234,7 +234,7 @@ def main():
 
     print(json.dumps(score_card, indent=4))
     Console().print(table)
-    
+
     #@NOTE : Generate PDF report using the score_card and run_summary.
     # run = dict(db.get_run_by_name(run_name=args.run_name))  # Refresh run data from DB
     # target_name = run['target']
@@ -242,13 +242,19 @@ def main():
     # date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # total_testcases = sum(len(metrics[metric]["Testcases"]) for metrics in score_card.values() for metric in metrics)
 
+    # # Place reports inside project_root/reports
+    # reports_folder = os.path.join(project_root, "reports")
+    # os.makedirs(reports_folder, exist_ok=True)
+
     # filename = EvaluationReport.create_report(
     #     target_name=target_name,
     #     run_name=run_name,
     #     date=date,
     #     total_testcases=total_testcases,
     #     target_summary= run_summary,
-    #     score_card=score_card
+    #     plan_summary=plan_summary,
+    #     score_card=score_card,
+    #     out_path=os.path.join(reports_folder, f"AI_Evaluation_Report_{target_name}.pdf")
     # )
     # logger.info(f"PDF Report generated for target: '{target_name}', run: '{run_name}', date: '{date}'")
     # logger.info(f"Report saved to: {filename}")

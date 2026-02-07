@@ -512,6 +512,7 @@ class EvaluationReport:
         total_testcases: int,
         target_summary: str,
         score_card: dict,
+        plan_summary: str = None,
         out_path: str = None
     ):
 
@@ -530,7 +531,10 @@ class EvaluationReport:
 
         story = []
 
-        # ----- Overview -----
+        # ============================================================
+        # EXPERIMENT OVERVIEW
+        # ============================================================
+
         story.append(inst.section_title("Experiment Overview"))
 
         kv = [
@@ -543,18 +547,53 @@ class EvaluationReport:
         story.append(inst.key_value_table(kv))
         story.append(Spacer(1, 8))
 
-        # ----- Target Summary -----
-        story.append(inst.section_title("Target Evaluation Run Summary"))
-        story.append(inst.body_text(target_summary))
+        # ============================================================
+        # DECIDE WHETHER RUN SUMMARY EXISTS
+        # ============================================================
+
+        has_run_summary = any(
+            metric.get("run_summary")
+            for plan in score_card.values()
+            for metric in plan.values()
+            if isinstance(metric, dict)
+        )
+
+        section_title = (
+            "Target Evaluation Run Summary"
+            if has_run_summary
+            else "Target Evaluation Plan Summary"
+        )
+
+        story.append(inst.section_title(section_title))
+
+        # ============================================================
+        # CONTENT SELECTION LOGIC
+        # ============================================================
+
+        if has_run_summary:
+            story.append(inst.body_text(target_summary))
+
+        elif plan_summary:
+            story.append(inst.body_text(plan_summary))
+
+        else:
+            story.append(inst.body_text("No summary available."))
+
         story.append(Spacer(1, 8))
 
-        # ----- Scores Table -----
+        # ============================================================
+        # SCORES TABLE
+        # ============================================================
+
         story.append(inst.section_title("Scores Table"))
 
         headers, rows = inst.scorecard_to_table(score_card)
         story.append(inst.score_table(headers, rows))
 
-        # Build PDF with header on every page
+        # ============================================================
+        # BUILD PDF
+        # ============================================================
+
         doc.build(
             story,
             onFirstPage=inst._draw_header,
