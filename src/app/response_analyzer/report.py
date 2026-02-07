@@ -15,6 +15,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__) + '/../../'))  # Adjust t
 
 from lib.orm.DB import DB
 from lib.utils import get_logger, get_logger_verbosity
+from lib.strategy.utils_new import OllamaConnect
+from lib.strategy.utils_new import EvaluationReport
 
 def main():
     # setup up logging
@@ -154,24 +156,102 @@ def main():
         # capture the score computed for the testcase.
         score_card[detail.plan_name][detail.metric_name]["Testcases"][detail.testcase_name] = conversation.evaluation_score
 
+    # ============================================================
+    # CHECK HOW MANY REAL PLANS EXIST FIRST
+    # ============================================================
+
+    real_plans = [p for p in score_card.keys() if p != "PlanSummary"]
+    multi_plan = len(real_plans) > 1
+
+    # ============================================================
+    # TABLE DEFINITION – COLUMN APPEARS ONLY IF MULTI PLAN
+    # ============================================================
+
     table = Table(title=f"Response Analysis Report for Run '{run.run_name}'")
     table.add_column("Plan Name", style="cyan", no_wrap=True)
     table.add_column("Metric Name", style="magenta")
     table.add_column("Score (0-1)", style="green")
-    
-    # iterate through the dictionary to create score summaries.
+    table.add_column("Metric Summary", style="white")
+    table.add_column("Plan Summary", style="yellow")
+
+    if multi_plan:
+        table.add_column("Run Summary", style="blue")
+
+    # ----- Average calculation -----
     for plan in score_card.keys():
         for metric in score_card[plan].keys():
             scores = list(score_card[plan][metric]["Testcases"].values())
-            avg_score = None
-            if scores:
-                avg_score = round(sum(scores) / len(scores), 2)
-                
+            avg_score = round(sum(scores) / len(scores), 2) if scores else None
             score_card[plan][metric]["Average"] = avg_score
-            table.add_row(plan, metric, str(avg_score) if avg_score != None else "N/A")
+
+    # ----- Generate Run Summary only if required -----
+    run_summary = OllamaConnect.get_run_summary(score_card) if multi_plan else ""
+    run_written = False
+
+    # ============================================================
+    # PLAN → METRIC → TESTCASE LEVEL ROWS
+    # ============================================================
+
+    for plan_name, metrics in score_card.items():
+        if plan_name == "PlanSummary":
+            continue
+        plan_summary = OllamaConnect.get_single_plan_summary(plan_name, metrics)
+        plan_written = False
+        for metric_name, metric_data in metrics.items():
+            metric_summary = OllamaConnect.get_metric_summary(
+                metric_name,
+                scores=metric_data.get("Average", "")
+            )
+
+            # store back
+            score_card[plan_name][metric_name]["summary"] = metric_summary
+            score_card[plan_name][metric_name]["plan_summary"] = plan_summary
+            score_card[plan_name][metric_name]["run_summary"] = run_summary
+
+            for tc_id, tc_score in metric_data["Testcases"].items():
+
+                if multi_plan:
+                    table.add_row(
+                        plan_name,
+                        metric_name,
+                        str(tc_score),
+                        metric_summary,
+                        plan_summary if not plan_written else "",
+                        run_summary if not run_written else ""
+                    )
+                else:
+                    table.add_row(
+                        plan_name,
+                        metric_name,
+                        str(tc_score),
+                        metric_summary,
+                        plan_summary if not plan_written else ""
+                    )
+
+                plan_written = True
+                run_written = True
+
 
     print(json.dumps(score_card, indent=4))
     Console().print(table)
+    
+    #@NOTE : Generate PDF report using the score_card and run_summary.
+    # run = dict(db.get_run_by_name(run_name=args.run_name))  # Refresh run data from DB
+    # target_name = run['target']
+    # run_name = run['run_name']
+    # date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # total_testcases = sum(len(metrics[metric]["Testcases"]) for metrics in score_card.values() for metric in metrics)
 
+    # filename = EvaluationReport.create_report(
+    #     target_name=target_name,
+    #     run_name=run_name,
+    #     date=date,
+    #     total_testcases=total_testcases,
+    #     target_summary= run_summary,
+    #     score_card=score_card
+    # )
+    # logger.info(f"PDF Report generated for target: '{target_name}', run: '{run_name}', date: '{date}'")
+    # logger.info(f"Report saved to: {filename}")
+    
 if __name__ == "__main__":
     main()
