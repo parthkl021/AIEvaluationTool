@@ -207,7 +207,7 @@ def main():
                     table.add_row(
                         plan_name,
                         metric_name,
-                        str(single_score),
+                        str(round(single_score, 3)),
                         metric_summary,
                         plan_summary if not plan_written else "",
                         run_summary if not run_written else ""
@@ -216,7 +216,7 @@ def main():
                     table.add_row(
                         plan_name,
                         metric_name,
-                        str(single_score),
+                        str(round(single_score, 3)),
                         metric_summary,
                         plan_summary if not plan_written else ""
                     )
@@ -227,28 +227,28 @@ def main():
     Console().print(table)
 
     #@NOTE : Generate PDF report using the score_card and run_summary.
-    # run = dict(db.get_run_by_name(run_name=args.run_name))  # Refresh run data from DB
-    # target_name = run['target']
-    # run_name = run['run_name']
-    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # total_testcases = sum(len(metrics[metric]["Testcases"]) for metrics in score_card.values() for metric in metrics)
+    run = dict(db.get_run_by_name(run_name=args.run_name))  # Refresh run data from DB
+    target_name = run['target']
+    run_name = run['run_name']
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    total_testcases = sum(len(metrics[metric]["Testcases"]) for metrics in score_card.values() for metric in metrics)
 
-    # # Place reports inside project_root/reports
-    # reports_folder = os.path.join(project_root, "reports")
-    # os.makedirs(reports_folder, exist_ok=True)
+    # Place reports inside project_root/reports
+    reports_folder = os.path.join(project_root, "reports")
+    os.makedirs(reports_folder, exist_ok=True)
 
-    # filename = EvaluationReport.create_report(
-    #     target_name=target_name,
-    #     run_name=run_name,
-    #     timestamp=timestamp,
-    #     total_testcases=total_testcases,
-    #     target_summary= run_summary,
-    #     plan_summary=plan_summary,
-    #     score_card=score_card,
-    #     out_path=os.path.join(reports_folder, f"AI_Evaluation_Report_{target_name}.pdf")
-    # )
-    # logger.info(f"PDF Report generated for target: '{target_name}', run: '{run_name}', timestamp: '{timestamp}' with total test cases: {total_testcases}")
-    # logger.info(f"Report saved to: {filename}")
+    filename = EvaluationReport.create_report(
+        target_name=target_name,
+        run_name=run_name,
+        timestamp=timestamp,
+        total_testcases=total_testcases,
+        target_summary= run_summary,
+        plan_summary=plan_summary,
+        score_card=score_card,
+        out_path=os.path.join(reports_folder, f"AI_Evaluation_Report_{target_name}.pdf")
+    )
+    logger.info(f"PDF Report generated for target: '{target_name}', run: '{run_name}', timestamp: '{timestamp}' with total test cases: {total_testcases}")
+    logger.info(f"Report saved to: {filename}")
     
 if __name__ == "__main__":
     main()

@@ -516,7 +516,7 @@ class EvaluationReport:
                     rows.append([
                         plan_name,
                         metric_name,
-                        str(tc_score),                     # individual score
+                        str(round(tc_score, 3)),                     # individual score
                         metric_data.get("tc_summary", {}).get(tc_id, ""),
                         metric_data.get("plan_summary", "") if first else ""
                     ])
