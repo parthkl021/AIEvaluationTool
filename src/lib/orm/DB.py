@@ -1237,45 +1237,45 @@ class DB:
                                   lang_id=getattr(result, 'lang_id', Language.autodetect),  # Get the language ID from kwargs if provided
                                   digest=result.hash_value)
         
-    # def add_or_get_judge_prompt(self, judge_prompt: LLMJudgePrompt) -> int:
-    #     """
-    #     Adds a new judge prompt to the database.
+    def add_or_get_judge_prompt(self, judge_prompt: LLMJudgePrompt) -> int:
+        """
+        Adds a new judge prompt to the database.
         
-    #     Args:
-    #         judge_prompt (LLMJudgePrompt): The LLMJudgePrompt object to be added.
+        Args:
+            judge_prompt (LLMJudgePrompt): The LLMJudgePrompt object to be added.
         
-    #     Returns:
-    #         int: The ID of the newly added judge prompt, or -1 if it already exists.
-    #     """
-    #     try:
-    #         with self.Session() as session:
-    #             # check of the judge prompt already exists in the database.
-    #             existing_judge_prompt = session.query(LLMJudgePrompts).filter_by(hash_value=judge_prompt.digest).first()
-    #             if existing_judge_prompt:
-    #                 # Return the ID of the existing judge prompt
-    #                 return getattr(existing_judge_prompt, "prompt_id")
+        Returns:
+            int: The ID of the newly added judge prompt, or -1 if it already exists.
+        """
+        try:
+            with self.Session() as session:
+                # check of the judge prompt already exists in the database.
+                existing_judge_prompt = session.query(LLMJudgePrompts).filter_by(hash_value=judge_prompt.digest).first()
+                if existing_judge_prompt:
+                    # Return the ID of the existing judge prompt
+                    return getattr(existing_judge_prompt, "prompt_id")
                     
-    #             self.logger.debug(f"Adding new judge prompt: {judge_prompt.prompt}")
-    #             # create the orm object for the judge prompt to insert into the database table.
-    #             new_judge_prompt = LLMJudgePrompts(prompt=judge_prompt.prompt, 
-    #                                                lang_id=getattr(judge_prompt, "lang_id", Language.autodetect),  # Get the language ID from kwargs if provided
-    #                                                hash_value=judge_prompt.digest)
+                self.logger.debug(f"Adding new judge prompt: {judge_prompt.prompt}")
+                # create the orm object for the judge prompt to insert into the database table.
+                new_judge_prompt = LLMJudgePrompts(prompt=judge_prompt.prompt, 
+                                                   lang_id=getattr(judge_prompt, "lang_id", Language.autodetect),  # Get the language ID from kwargs if provided
+                                                   hash_value=judge_prompt.digest)
                 
-    #             # Add the new judge prompt to the session
-    #             session.add(new_judge_prompt)
-    #             # Commit the session to save the new judge prompt
-    #             session.commit()
-    #             # Ensure judge_prompt_id is populated
-    #             session.refresh(new_judge_prompt)  
+                # Add the new judge prompt to the session
+                session.add(new_judge_prompt)
+                # Commit the session to save the new judge prompt
+                session.commit()
+                # Ensure judge_prompt_id is populated
+                session.refresh(new_judge_prompt)  
 
-    #             self.logger.debug(f"Judge prompt added successfully: {new_judge_prompt.prompt_id}")
+                self.logger.debug(f"Judge prompt added successfully: {new_judge_prompt.prompt_id}")
                 
-    #             # Return the ID of the newly added judge prompt
-    #             return getattr(new_judge_prompt, "prompt_id")
-    #     except IntegrityError as e:
-    #         # Handle the case where the judge prompt already exists
-    #         self.logger.error(f"Judge prompt already exists: {judge_prompt}. Error: {e}")
-    #         return -1
+                # Return the ID of the newly added judge prompt
+                return getattr(new_judge_prompt, "prompt_id")
+        except IntegrityError as e:
+            # Handle the case where the judge prompt already exists
+            self.logger.error(f"Judge prompt already exists: {judge_prompt}. Error: {e}")
+            return -1
     
     def get_prompt(self, prompt_id: int) -> Optional[Prompt]:
         """
@@ -2213,80 +2213,44 @@ class DB:
         if s1 == s2:
             return 0
         return 1 if s1 > s2 else -1
-
-
-
+    
     def get_all_runs(self, domain=None, target=None, status=None):
-
         with self.Session() as session:
-
             sql = (
-
                 select(TestRuns)
-
                 .outerjoin(Targets, TestRuns.target_id == Targets.target_id)
-
                 .outerjoin(Domains, Targets.domain_id == Domains.domain_id)
-
             )
 
-
-
             if target:
-
                 sql = sql.where(Targets.target_name == target)
 
-
-
             if domain:
-
                 sql = sql.where(Domains.domain_name == domain)
-
                 # OR if frontend sends domain_id:
-
                 # sql = sql.where(Domains.domain_id == domain)
 
-
-
             if status:
-
                 sql = sql.where(TestRuns.status == status)
-
-
 
             results = session.execute(sql).scalars().all()
 
-
-
             runs = []
-
             for r in results:
-
                 runs.append(
-
                     Run(
-
                         run_id=r.run_id,
-
                         run_name=r.run_name,
-
                         target=r.target.target_name if r.target else None,
-
                         target_id=r.target_id,
-
                         start_ts=r.start_ts.isoformat(),
-
                         end_ts=r.end_ts.isoformat() if r.end_ts else None,
-
                         status=str(r.status),
-
                     )
-
                 )
 
-
-
             return runs
+
     
     def get_run_by_name(self, run_name: str) -> Optional[Run]:
         """
@@ -2335,7 +2299,7 @@ class DB:
                        end_ts=result.end_ts.isoformat(),
                        status=str(result.status),
                        run_id=getattr(result, 'run_id'))
-    
+
     def _ensure_datetime(self, value):
         if value is None:
             return None
@@ -3883,6 +3847,9 @@ class DB:
             # Handle the case where the conversation already exists
             self.logger.error(f"Conversation already exists: {conversation}. Error: {e}")
             return -1
+        
+## evaluation score function
+
 
     def get_conversation_by_id(self, conversation_id: int) -> Optional[Conversation]:
         """
@@ -4057,3 +4024,14 @@ class DB:
             )
 
             return timeline
+
+    def get_metrics_by_testplan(self, plan_name: str) -> list[str]:
+        with self.Session() as session:
+            sql = (
+                select(Metrics.metric_name)
+                .join(TestPlanMetricMapping, Metrics.metric_id == TestPlanMetricMapping.metric_id)
+                .join(TestPlans, TestPlans.plan_id == TestPlanMetricMapping.plan_id)
+                .where(TestPlans.plan_name == plan_name)
+            )
+            return session.execute(sql).scalars().all()    
+
