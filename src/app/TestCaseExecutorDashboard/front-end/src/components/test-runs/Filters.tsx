@@ -41,6 +41,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         isLoading={isLoading}
         onChange={onFilterChange}
       />
+      
 
       {/* <FilterSelect
         placeholder="Language"

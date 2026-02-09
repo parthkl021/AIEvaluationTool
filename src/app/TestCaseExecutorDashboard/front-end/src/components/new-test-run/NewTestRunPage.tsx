@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useState, useEffect} from 'react';
 import './NewTestRunPage.css';
 
 // Import only the Bootstrap CSS for the select components
@@ -8,18 +8,30 @@ import Loop from './Loop/Loop';
 
 interface RunFormData {
   target: string;
-  testPlanId: number | null;
+  testPlan: string; 
   testCaseId: number | null;
-  metricId: number | null;
-  metric: string;
+  metric: string;     // ✅ name
   maxTestCases: string;
   domain: string;
   language: string;
 }
 
+interface FilterItem {
+  filter_name: string;
+}
+
+interface AllFiltersResponse {
+  domains: FilterItem[];
+  languages: FilterItem[];
+  targets: FilterItem[];
+  plans: FilterItem[];
+  metrics: FilterItem[];
+  statuses: FilterItem[];
+}
+
 const NewTestRunPage: React.FC = () => {
   // Sample data for dropdowns
-  const targets = ['Vaidya AI', 'Target 2', 'Target 3'];
+  // const targets = ['Vaidya AI', 'Target 2', 'Target 3'];
   const testPlans = ['Plan 1', 'Plan 2', 'Plan 3'];
   const metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score'];
   const maxTestCases = ['10', '20', '30', '50', '100'];
@@ -27,26 +39,56 @@ const NewTestRunPage: React.FC = () => {
   const languages = ['English', 'Spanish', 'French', 'German', 'Chinese'];
   const [isRunning, setIsRunning] = useState(false);
   const [totalTestCases, setTotalTestCases] = useState(0);
+  const [filters, setFilters] = useState<AllFiltersResponse | null>(null);
+  const [planMetrics, setPlanMetrics] = useState<string[]>([]);
+  
   const [formData, setFormData] = useState<RunFormData>({
     target: "",
-    testPlanId: null,
+    testPlan: "",
     testCaseId:null,
-    metricId: null,
+    
     metric: "",
-    maxTestCases: "",
+    maxTestCases: "10", // 👈 default selected
     domain: "",
     language: "",
   });
-
-  const handleChange = <K extends keyof RunFormData>(
-    key: K,
-    value: RunFormData[K]
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const isStartDisabled = !formData.testPlan || isRunning
+  useEffect(() => {
+  const fetchFilters = async () => {
+    try {
+      const res = await fetch("http://localhost:7000/get_all_filters");
+      const data: AllFiltersResponse = await res.json();
+      setFilters(data);
+    } catch (err) {
+      console.error("Failed to fetch filters", err);
+    }
   };
+
+  fetchFilters();
+}, []);
+const fetchMetricsByPlan = async (planName: string) => {
+  try {
+    const res = await fetch(
+      `http://localhost:7000/get_metrics_by_plan/${planName}`
+    );
+    const data = await res.json();
+    setPlanMetrics(data.map((m: any) => m.filter_name));
+  } catch (err) {
+    console.error("Failed to fetch metrics", err);
+    setPlanMetrics([]);
+  }
+};
+const handleChange = (key: string, value: any) => {
+  setFormData(prev => ({
+    ...prev,
+    [key]: value,
+    ...(key === "testPlan" && { metric: "" })
+  }));
+
+  if (key === "testPlan") {
+    fetchMetricsByPlan(value); // 🔥 second fetch happens here
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +147,7 @@ const NewTestRunPage: React.FC = () => {
           <div className="filter-item">
             <label>Target</label>
             <CustomSelect
-              options={targets}
+              options={filters?.targets.map(t => t.filter_name) ?? []}
               defaultText="Select Target"
               onChange={(val) => handleChange("target", val)}
             />
@@ -113,13 +155,10 @@ const NewTestRunPage: React.FC = () => {
 
           <div className="filter-item">
             <label>Test Plan</label>
-            <input
-              type="number"
-              placeholder="Enter Test Plan ID"
-              value={formData.testPlanId ?? ""}
-              onChange={(e) =>
-                handleChange("testPlanId", Number(e.target.value))
-              }
+            <CustomSelect
+              options={filters?.plans.map(p => p.filter_name) ?? []}
+              defaultText="Select Test Plan"
+              onChange={(val) => handleChange("testPlan", val)}
             />
           </div>
           <div className="filter-item">
@@ -128,6 +167,7 @@ const NewTestRunPage: React.FC = () => {
               type="number"
               placeholder="Enter Test Plan ID"
               value={formData.testCaseId?? ""}
+              disabled={!formData.testPlan}
               onChange={(e) =>
                 handleChange("testCaseId", Number(e.target.value))
               }
@@ -135,14 +175,15 @@ const NewTestRunPage: React.FC = () => {
           </div>
 
           <div className="filter-item">
-            <label>Metric ID</label>
-            <input
-              type="number"
-              placeholder="Enter Test Plan ID"
-              value={formData.metricId?? ""}
-              onChange={(e) =>
-                handleChange("metricId", Number(e.target.value))
+            <label>Metric </label>
+            <CustomSelect
+              options={planMetrics}
+              defaultText={
+                formData.testPlan ? "Select Metric" : "Select Test Plan first"
               }
+              
+              disabled={!formData.testPlan}
+              onChange={(val) => handleChange("metric", val)}
             />
           </div>
         </div>
@@ -160,7 +201,7 @@ const NewTestRunPage: React.FC = () => {
           <div className="filter-item">
             <label>Domain</label>
             <CustomSelect
-              options={domains}
+              options={filters?.domains.map(p => p.filter_name) ?? []}
               defaultText="Select Domain"
               onChange={(val) => handleChange("domain", val)}
             />
@@ -176,11 +217,11 @@ const NewTestRunPage: React.FC = () => {
           </div>
         </div>
 
-        <button type="submit" className="start-button">
+        <button type="submit" className="start-button" disabled={isStartDisabled}>
           Start Run
         </button>
       </form>
-      {isRunning && <Loop isRunning={isRunning} totalTestCases={totalTestCases} stepsPerTestCase={4}/>}       
+      {isRunning && <Loop isRunning={isRunning} totalTestCases={totalTestCases} stepsPerTestCase={4} stepNames={["Initialize", "Validate", "Process", "Finalize"]}/>}       
       
     </div>
   );

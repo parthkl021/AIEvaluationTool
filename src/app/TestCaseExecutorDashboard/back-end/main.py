@@ -541,7 +541,7 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
             testcases = db.get_testcases_by_metric(
                 metric_name=metric_name,
                 n=3,
-                lang_name=lang_name,
+                lang_names=lang_name,
                 domain_name=domain_name
             ) 
             if not testcases:
