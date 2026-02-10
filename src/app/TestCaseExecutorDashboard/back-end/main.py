@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Query, WebSocket, BackgroundTasks,WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, BackgroundTasks,WebSocketDisconnect, Request
 from fastapi.responses import FileResponse
 from services.ws_manager import ws_manager 
 from openpyxl import Workbook
@@ -7,7 +7,7 @@ from typing import Optional, List
 import tempfile
 import os
 # import mysql.connector
-
+import json
 import uvicorn
 import asyncio
 # from mysql.connector import Error
@@ -36,11 +36,29 @@ from lib.interface_manager import InterfaceManagerClient  # Import the Interface
 #             f"{os.getenv('DB_NAME')}"
 #         )
 
-db_file = "AIEvaluationData.db"
+
+## Configure DB and port connection  (using config.json for flexibility)
+
+config_path = os.path.join(os.path.dirname(__file__), "config.json")
+try:
+    with open(config_path, "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    config = {}
+
+db_cfg = config.get("db", {})
+engine_type = db_cfg.get("engine_type", "sqlite").lower()
+
+port_config = config.get("port", {})
+BACKEND_PORT = int(port_config.get("back-end", 7000))
+
+if engine_type == "sqlite":
+    
+    db_file = "AIEvaluationData.db"
 
 # Resolve project root (this file → importer → app → src → project_root)
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-
+print(f"Project root resolved to: {project_root}")
 
 # Place DB inside project_root/data
 db_folder = os.path.join(project_root, "data")
@@ -69,6 +87,11 @@ app.add_middleware(
 #     import asyncio
 #     asyncio.run(execute_testcases(*args))
 
+
+def load_config():
+    with open(config_path , "r") as f:
+        return json.load(f)
+    
 ## WebSocket for real-time updates
 
 @app.websocket("/ws/test-run")
@@ -619,7 +642,7 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
         # 🔹 Get testcases count (NO execution here)
 
         else:
-            testcases = db.get_testcases_by_testplan(plan_name=plan_name, n=max_test_cases, lang_name=lang_name, domain_name=domain_name)
+            testcases = db.get_testcases_by_testplan(plan_name=plan_name, n=max_test_cases, lang_names=lang_name, domain_name=domain_name)
             if not testcases:
                 print("No Test cases Found")
                 return
@@ -817,12 +840,30 @@ def get_metrics_by_plan(plan_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/__dev/config")
+def dev_config():
+    if not os.getenv("DEV_CONFIG_ENABLED"):
+        print("Dev config is disabled.")
+        raise HTTPException(status_code=404)
+        
+    print("Accessed dev config endpoint")
+    return load_config()
+    
+@app.post("/__dev/config")
+async def update_config(request: Request):
+    
 
+    data = await request.json()
+
+    with open(config_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    return {"message": "Config updated"}
 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=7000,
+        port=BACKEND_PORT,
         reload=True
     )
