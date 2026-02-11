@@ -26,10 +26,10 @@ class Robustness_OutOfDomain(Strategy):
 
     def __init__(self,
                  name:str="robustness_ood",
-                 nli_model=dflt_vals.get("nli_model_name", "cross-encoder/nli-deberta-base"),
-                 emb_model=dflt_vals.get("embed_model_name", "all-MiniLM-L6-v2"),
-                 device=dflt_vals.get("device", "cpu"),
-                 save_dir=dflt_vals.get("save_dir", "saved_evals")):
+                 nli_model=dflt_vals.nli_model_name,
+                 emb_model=dflt_vals.embed_model_name,
+                 device=dflt_vals.device,
+                 save_dir=dflt_vals.save_dir):
         
         self.nli = CrossEncoder(nli_model)
         self.emb = SentenceTransformer(emb_model)
