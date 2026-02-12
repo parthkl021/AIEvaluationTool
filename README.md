@@ -72,6 +72,33 @@ TDMS follows a modern three-tier architecture:
 └─────────────────┘
 ```
 
+### What is Prompt Quality Evaluation Tool?
+
+
+The **Prompt Quality Evaluation Tool (PQET)** is a specialized module within the AIEvaluationTool designed to assess the quality of prompts and expected responses used in conversational AI systems. It leverages advanced evaluation strategies, including LLM-based judgment, to ensure that prompts are aligned with predefined metrics and submetrics. PQET provides a user-friendly interface for defining metrics, inputting test cases, and generating detailed evaluations. By automating the evaluation process, PQET helps identify critical flaws in prompts and suggests actionable improvements, ensuring that conversational agents meet high standards of accuracy, coherence, and safety.
+
+### System Architecture
+
+The PQET tool follows a modular architecture:
+
+```
+┌─────────────────┐
+│   Frontend      │  Streamlit-based UI
+│   (Streamlit)   │  Plotly for visualizations
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│   Backend       │  Python-based logic
+│   (FastAPI)     │  Async evaluation with LLMs
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│   Database      │  SQLite or JSON-based
+│   (Data Store)  │  Test cases and metrics
+└─────────────────┘
+```
+
+
 ## 2. **Architecture & Design**
 
 ### System Architecture
@@ -702,7 +729,7 @@ The report will display detailed evaluation metrics:
 ### **Set Up Test Data Management System (TDMS)**
 ---
 Access the web-based UI for managing test data and users.
-This module provides comprehensive CRUD (Create, Read, Update, Delete) operations for test cases within the TDMS (Test Data Management System) application. For user manul [click here](docs/TDMS_Documentation.pdf)
+This module provides comprehensive CRUD (Create, Read, Update, Delete) operations for test cases within the TDMS (Test Data Management System) application. For user manual [click here](docs/TDMS_Documentation.pdf)
 
 #### 5.2.1 **Backend Setup**
 
@@ -791,6 +818,44 @@ Use these login credentials:
 | Viewer | `viewer` | `viewer123` |
 
 ---
+
+### **Prompt Quality Evaluation Tool**
+---
+The Prompt Quality Evaluation Tool (PQET) is a specialized module for assessing the quality of prompts and expected responses used in conversational AI systems. It provides a user-friendly interface for defining metrics, inputting test cases, and generating detailed evaluations. For the user manual, [click here](docs/Prompt_Quality_Evaluation_Tool_Documentation.pdf).
+
+#### 5.3.1 **Start the PQET Application**
+
+**Step 1: Navigate to the PQET Directory**
+
+```bash
+cd src/app/prompt_quality_evaluation_tool
+```
+
+**Step 2: Start the PQET Application**
+
+Run the following command to start the Streamlit-based application:
+
+```bash
+streamlit run main.py
+```
+> Note: Ensure all required dependencies are installed
+
+The application will start, and you will see a URL in the terminal, such as:
+
+```
+Local URL: http://localhost:8501
+```
+
+**Step 3: Access the Application**
+
+1. Open your web browser.
+2. Navigate to the URL displayed in the terminal (e.g., `http://localhost:8501`).
+3. You should see the Prompt Quality Evaluation Tool interface.
+
+![PQET Home Page](screenshots/PQET_home.png)
+
+---
+
 
 ## How the AI Evaluation Tool Came to Life
 

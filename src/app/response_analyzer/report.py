@@ -178,7 +178,7 @@ def main():
         table.add_column("Run Summary", style="blue")
 
     # ============================================================
-    # PLAN → METRIC → TESTCASE LEVEL ROWS
+    # PLAN → METRIC LEVEL ROWS (DISTINCT METRICS ONLY)
     # ============================================================
 
     run_summary = OllamaConnect.get_run_summary(score_card) if multi_plan else ""
