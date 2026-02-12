@@ -106,7 +106,7 @@ class SimilarityMatchStrategy(Strategy):
         embedding_model = SentenceTransformer('sentence-transformers/distiluse-base-multilingual-cased-v1')
         embeddings = embedding_model.encode([agent_response,expected_response])
         similarity = cos_sim(embeddings[0],embeddings[1])
-        return similarity[0][0]
+        return similarity[0][0].item()
 
 
     def evaluate(self, testcase:TestCase, conversation:Conversation):
@@ -123,14 +123,14 @@ class SimilarityMatchStrategy(Strategy):
                 bertscore = load("bertscore")
                 results = bertscore.compute(predictions=[conversation.agent_response], references=[testcase.response.response_text], lang="en")
                 if results is None:
-                    return 0.0, ""
-                return float(results['f1'][0])  , ""# Return the F1 score from BERTScore
+                    return 0.0, OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), 0.0)
+                return float(results['f1'][0])  , OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), float(results['f1'][0]))
             case "cosine_similarity":
                 if testcase.response.response_text is None:
                     logger.error("Expected response is None, cannot compute cosine similarity.")
                     return 0.0, OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), 0.0)
                 cos_sim_score = self.cosine_similarity_metric(conversation.agent_response, testcase.response.response_text)
-                return float(cos_sim_score), ""
+                return float(cos_sim_score), OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), float(cos_sim_score))
             case "ROUGE" | "rouge":
                 score = self.rouge_score_metric(conversation.agent_response, testcase.response.response_text)
                 return float(score['rougeLsum']), OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), float(score['rougeLsum']))

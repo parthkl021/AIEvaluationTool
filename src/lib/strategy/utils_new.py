@@ -13,15 +13,13 @@ from typing import Optional, List
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle,
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 )
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_JUSTIFY
 
 logger = get_logger("utils_new")
 
@@ -266,10 +264,27 @@ class OllamaConnect:
             return "Could not get a proper reasoning for the score."
         
     @staticmethod
-    def get_metric_summary(metric_name: str, scores: float, **kwargs):
+    def get_metric_summary(metric_name: str, scores, **kwargs):
+        """
+        Accepts a list of scores belonging to one metric and produces
+        a single coherent summary at metric level.
+        """
+
+        # Normalize input
+        if isinstance(scores, (list, tuple)):
+            values = list(scores)
+        else:
+            values = [scores]
+
+        # Derive a representative metric score
+        avg_score = round(sum(values) / len(values), 3)
+
+        # Text presented to the model should reflect aggregation
+        score_text = f"Average: {avg_score} from {len(values)} samples"
+
         prompt = OllamaConnect.dflt_vals.metric_summary_prompt.format(
             metric=metric_name,
-            scores=scores,
+            scores=score_text,
             add_info=kwargs.get("add_info", "")
         )
 
@@ -278,23 +293,19 @@ class OllamaConnect:
             OllamaConnect.dflt_vals.reqd_flds
         )
 
-        final_summary = ""
-
-        if len(responses) > 0:
-            summaries = [r["summary"] for r in responses]
-
-            if len(summaries) == 1:
-                return f"{summaries[0]}"
-
-            for i, s in enumerate(summaries):
-                if i == 0:
-                    final_summary += f"Summary {i+1} : {s}"
-                else:
-                    final_summary += f"\n\n Summary {i+1} : {s}"
-
-            return final_summary
-        else:
+        if not responses:
             return "Could not generate metric summary."
+
+        summaries = [r["summary"] for r in responses]
+
+        # Single response: return directly
+        if len(summaries) == 1:
+            return summaries[0]
+
+        # Multiple responses: weave them into one narrative
+        return "\n\n".join(
+            f"Summary {i+1} : {s}" for i, s in enumerate(summaries)
+        )
 
     @staticmethod
     def get_single_plan_summary(plan_name: str, metrics: dict, **kwargs):
@@ -302,10 +313,14 @@ class OllamaConnect:
         overview = []
 
         for metric, data in metrics.items():
+
+            # collect all testcase summaries for this metric
+            tc_summaries = list(data.get("tc_summary", {}).values())
+
             overview.append({
                 "metric": metric,
-                "average": data.get("Average"),
-                "cases": len(data.get("Testcases", {}))
+                "testcase_count": len(data.get("Testcases", {})),
+                "metric_summaries": tc_summaries
             })
 
         prompt = OllamaConnect.dflt_vals.plan_summary_prompt.format(
@@ -326,13 +341,26 @@ class OllamaConnect:
         overview = []
 
         for plan, metrics in score_card.items():
+
+            # skip structural nodes
+            if not isinstance(metrics, dict):
+                continue
+
+            plan_level = {
+                "plan": plan,
+                "metrics": []
+            }
+
             for metric, data in metrics.items():
-                overview.append({
-                    "plan": plan,
+
+                plan_level["metrics"].append({
                     "metric": metric,
-                    "average": data.get("Average"),
-                    "cases": len(data.get("Testcases", {}))
+                    "testcase_count": len(data.get("Testcases", {})),
+                    "metric_summaries": list(data.get("tc_summary", {}).values()),
+                    "plan_summary": data.get("plan_summary")
                 })
+
+            overview.append(plan_level)
 
         prompt = OllamaConnect.dflt_vals.run_summary_prompt.format(
             overview=json.dumps(overview, indent=2),
@@ -353,6 +381,7 @@ class OllamaConnect:
             f"Summary {i+1} : {s}" for i, s in enumerate(summaries)
         )
 
+
 # The EvaluationReport class is responsible for generating a PDF report of the evaluation results. 
 class EvaluationReport:
     def __init__(self, title="Conversational AI Evaluation Report",
@@ -361,10 +390,9 @@ class EvaluationReport:
         self.title = title
         self.pagesize = pagesize
         self.margin = margin_mm * mm
-
         self.styles = getSampleStyleSheet()
 
-        # Custom styles
+        # Section heading
         self.styles.add(
             ParagraphStyle(
                 name="SectionTitle",
@@ -375,12 +403,27 @@ class EvaluationReport:
             )
         )
 
+        # Left aligned labels for key column
+        self.styles.add(
+            ParagraphStyle(
+                name="BodyLabel",
+                parent=self.styles["BodyText"],
+                fontSize=10,
+                leading=12,
+                alignment=0,        # TA_LEFT
+                spaceAfter=2
+            )
+        )
+
+        # Justified body text
         self.styles.add(
             ParagraphStyle(
                 name="Body",
                 parent=self.styles["BodyText"],
                 fontSize=10,
-                leading=12
+                leading=12,
+                alignment=TA_JUSTIFY,
+                spaceAfter=4
             )
         )
 
@@ -404,8 +447,6 @@ class EvaluationReport:
     def section_title(self, text):
         return Paragraph(text, self.styles["SectionTitle"])
 
-    # -----------------------------------------------------
-
     def body_text(self, text):
         return Paragraph(text, self.styles["Body"])
 
@@ -415,12 +456,13 @@ class EvaluationReport:
         left_w = 40 * mm
         right_w = self.pagesize[0] - 2 * self.margin - left_w
 
-        data = []
-        for k, v in kv_pairs:
-            data.append([
-                Paragraph(f"<b>{k}:</b>", self.styles["Body"]),
+        data = [
+            [
+                Paragraph(f"<b>{k}:</b>", self.styles["BodyLabel"]),
                 Paragraph(str(v), self.styles["Body"])
-            ])
+            ]
+            for k, v in kv_pairs
+        ]
 
         t = Table(data, colWidths=[left_w, right_w], hAlign="LEFT")
 
@@ -437,28 +479,26 @@ class EvaluationReport:
 
     def score_table(self, headers, rows):
         usable_width = self.pagesize[0] - 2 * self.margin
-        # Slightly friendlier proportions for long summaries
-        proportions = [0.13, 0.15, 0.08, 0.36, 0.28]
+
+        proportions = [0.15, 0.18, 0.10, 0.37, 0.20]
         colWidths = [usable_width * p for p in proportions]
-        data = []
-        # Header
-        data.append([
-            Paragraph(f"<b>{h}</b>", self.styles["Body"])
-            for h in headers
-        ])
-        # Rows
+
+        data = [[Paragraph(f"<b>{h}</b>", self.styles["Body"]) for h in headers]]
+
         for r in rows:
             data.append([
                 Paragraph(str(cell), self.styles["Body"])
                 for cell in r
             ])
+
         table = Table(
             data,
             colWidths=colWidths,
             repeatRows=1,
             hAlign="LEFT",
-            splitByRow=1        # allow rows to break across pages
+            splitByRow=1
         )
+
         table.setStyle(TableStyle([
             ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -468,9 +508,9 @@ class EvaluationReport:
             ("TOPPADDING", (0, 0), (-1, -1), 6),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
             ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
-            # critical for long text
             ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
         ]))
+
         return table
 
     # -----------------------------------------------------
@@ -483,22 +523,31 @@ class EvaluationReport:
             "Metric Summary",
             "Plan Summary"
         ]
+
         rows = []
+
         for plan_name, metrics in score_card.items():
             if plan_name == "PlanSummary":
                 continue
-            first = True
+
+            first_metric = True
+
             for metric_name, metric_data in metrics.items():
-                # iterate over each testcase so metrics can repeat
-                for tc_id, tc_score in metric_data["Testcases"].items():
-                    rows.append([
-                        plan_name,
-                        metric_name,
-                        str(tc_score),                     # individual score
-                        metric_data.get("summary", ""),
-                        metric_data.get("plan_summary", "") if first else ""
-                    ])
-                    first = False
+
+                metric_score = metric_data.get("metric_score", "")
+                metric_summary = metric_data.get("metric_summary", "")
+                plan_summary = metric_data.get("plan_summary", "")
+
+                rows.append([
+                    plan_name,
+                    metric_name,
+                    str(metric_score),
+                    metric_summary,
+                    plan_summary if first_metric else ""
+                ])
+
+                first_metric = False
+
         return headers, rows
 
     # -----------------------------------------------------
@@ -508,10 +557,11 @@ class EvaluationReport:
         cls,
         target_name: str,
         run_name: str,
-        date: str,
+        timestamp: str,
         total_testcases: int,
         target_summary: str,
         score_card: dict,
+        plan_summary: str = None,
         out_path: str = None
     ):
 
@@ -530,31 +580,47 @@ class EvaluationReport:
 
         story = []
 
-        # ----- Overview -----
         story.append(inst.section_title("Experiment Overview"))
 
         kv = [
             ("Target Name", target_name),
             ("Run Name", run_name),
-            ("Date", date),
+            ("Timestamp", timestamp),
             ("Total Test Cases", str(total_testcases)),
         ]
 
         story.append(inst.key_value_table(kv))
         story.append(Spacer(1, 8))
 
-        # ----- Target Summary -----
-        story.append(inst.section_title("Target Evaluation Run Summary"))
-        story.append(inst.body_text(target_summary))
+        has_run_summary = any(
+            metric.get("run_summary")
+            for plan in score_card.values()
+            for metric in plan.values()
+            if isinstance(metric, dict)
+        )
+
+        section_title = (
+            "Target Evaluation Run Summary"
+            if has_run_summary
+            else "Target Evaluation Plan Summary"
+        )
+
+        story.append(inst.section_title(section_title))
+
+        if has_run_summary:
+            story.append(inst.body_text(target_summary))
+        elif plan_summary:
+            story.append(inst.body_text(plan_summary))
+        else:
+            story.append(inst.body_text("No summary available."))
+
         story.append(Spacer(1, 8))
 
-        # ----- Scores Table -----
         story.append(inst.section_title("Scores Table"))
 
         headers, rows = inst.scorecard_to_table(score_card)
         story.append(inst.score_table(headers, rows))
 
-        # Build PDF with header on every page
         doc.build(
             story,
             onFirstPage=inst._draw_header,

@@ -21,14 +21,13 @@ nltk
 evaluate
 google-api-python-client
 accelerate
-language_tool_python
+language_tool_python>=3.2.2
 lexical_diversity
 sentencepiece
 sarvamai
 openpyxl
 
 psycopg2-binary
-mariadb
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
@@ -64,4 +63,11 @@ abs
 levenshtein
 stanza
 zss
+
 reportlab
+matplotlib
+scipy
+seaborn
+bert-extractive-summarizer
+
+mariadb
