@@ -56,3 +56,6 @@ class NewTestRun(BaseModel):
     maxTestCases: str
     domain: str
     language: str
+
+class ContinueRunRequest(BaseModel):
+    run_name: str    

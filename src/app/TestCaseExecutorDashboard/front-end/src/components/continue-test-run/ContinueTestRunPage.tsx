@@ -1,5 +1,5 @@
 import React,{useState, useEffect} from 'react';
-import './NewTestRunPage.css';
+import './ContinueTestRunPage.css';
 
 // Import only the Bootstrap CSS for the select components
 
@@ -7,6 +7,7 @@ import CustomSelect from './CustomSelect/CustomSelect';
 import Loop from './Loop/Loop';
 
 interface RunFormData {
+  runName: string;   // ✅ add this
   target: string;
   testPlan: string; 
   testCaseId: number | null;
@@ -29,7 +30,7 @@ interface AllFiltersResponse {
   statuses: FilterItem[];
 }
 
-const NewTestRunPage: React.FC = () => {
+const ContinueRunPage: React.FC = () => {
   // Sample data for dropdowns
   // const targets = ['Vaidya AI', 'Target 2', 'Target 3'];
   const testPlans = ['Plan 1', 'Plan 2', 'Plan 3'];
@@ -43,6 +44,7 @@ const NewTestRunPage: React.FC = () => {
   const [planMetrics, setPlanMetrics] = useState<string[]>([]);
   
   const [formData, setFormData] = useState<RunFormData>({
+    runName:"",   // ✅ initialize this
     target: "",
     testPlan: "",
     testCaseId:null,
@@ -90,59 +92,52 @@ const handleChange = (key: string, value: any) => {
   }
 };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsRunning(true); 
-    const res = await fetch("http://localhost:7000/start-run", {
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();  // 🚨 VERY IMPORTANT
+
+  console.log("Submitting run name:", formData.runName);
+
+  try {
+    const res = await fetch("http://localhost:7000/continue-run", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({
+        run_name: formData.runName,
+      }),
     });
 
-    const runData = await res.json(); // <-- this should now include runName, runId, testPlanId, metricId
-    console.log("POST /start-run response:", runData);
-    setTotalTestCases(runData.totalTestCases);
-    setIsRunning(true); // now we can start the Loop component
+    if (!res.ok) {
+      console.error("Run not found");
+      return;
+    }
 
-    // 2️⃣ Open WebSocket to get live updates
-    const ws = new WebSocket("ws://localhost:7000/ws/test-run");
+    const data = await res.json();
+    console.log("Continue Run Response:", data);
 
-    ws.onopen = () => {
-      console.log("WebSocket connected, sending run info");
-      ws.send(JSON.stringify(runData)); // send metric_id, runId, etc.
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data); // backend sends JSON updates
-      console.log("Update from backend:", data);
-
-      // Example: if backend sends total_test_cases
-      // setTotalTestCases(data.total);
-      // setCurrentTestCase(data.current);
-  };
-
-  ws.onclose = () => {
-    console.log("WebSocket closed");
-  };
-  };
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};  
 
   return (
     <div className="new-test-run-container">
-      <h1>Create New Test Run</h1>
+      <h1>Continue Test Run</h1>
       <p className="subtitle">Configure and start AI evaluation run</p>
       
-      <div className="form-group">
+      
+
+      <form className="filters-container" onSubmit={handleSubmit}>
+        <div className="form-group">
         <label>Test Run Name</label>
         <input 
           type="text" 
           className="form-input" 
           defaultValue="Regression test" 
+          onChange={(e) => handleChange("runName", e.target.value)}
         />
       </div>
-
-      <form className="filters-container" onSubmit={handleSubmit}>
         <div className="filters-row">
           <div className="filter-item">
             <label>Target</label>
@@ -221,10 +216,10 @@ const handleChange = (key: string, value: any) => {
           Start Run
         </button>
       </form>
-      {isRunning && <Loop isRunning={isRunning} totalTestCases={totalTestCases} stepsPerTestCase={4} stepNames={["Prepare", "Finding elements", "Execute", "Store"]}/>}       
+      
       
     </div>
   );
 };
 
-export default NewTestRunPage;
+export default ContinueRunPage;
