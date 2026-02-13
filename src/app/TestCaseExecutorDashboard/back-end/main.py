@@ -540,7 +540,7 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
                 return
             testcases = db.get_testcases_by_metric(
                 metric_name=metric_name,
-                n=3,
+                n=max_test_cases,
                 lang_names=lang_name,
                 domain_name=domain_name
             ) 

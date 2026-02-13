@@ -3,6 +3,7 @@ import "./Filters.css";
 import { AllFilters } from "../../types/Filters";
 import FilterSelect from "../common/Filters/Filters";
 import AppButton from "../common/Button/AppButton";
+import { useNavigate } from "react-router-dom";
 
 interface FiltersProps {
   onFilterChange?: (filterType: string, value: string) => void;
@@ -18,6 +19,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
     statuses: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -88,6 +90,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
             icon="bi-plus-lg"
             size="md"
             className="new-test-run-btn"
+            onClick={() => navigate(`/create-test-run`)}
           />
         </div>
       </div>
