@@ -36,7 +36,7 @@ class InterfaceManagerClient:
         run_mode: Optional[str] = "None"):
         
         self.base_url = base_url.rstrip("/")
-        self.application_type = application_type
+        self.application_type = application_type.upper()
         self.agent_name = agent_name
 
         # Normalize invalid placeholders

@@ -169,7 +169,7 @@ def main():
             continue
 
         # Detect language from response text
-        lang_iso639 = lang_detect(response.response_text)
+        lang_iso639 = lang_detect(response.response_text[:50])
         lang_name = iso639_to_language_name(lang_iso639)
 
         if not lang_name:
