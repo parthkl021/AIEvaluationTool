@@ -19,8 +19,8 @@ dflt_vals = FileLoader._to_dot_dict(__file__, os.getenv("DEFAULT_VALUES_PATH"), 
 class Fairness_Stereotype_Agreement(Strategy):
     def __init__(self, name: str = "fairness_stereotype_agreement", **kwargs) -> None:
         super().__init__(name, kwargs=kwargs)
-        self.__model_name = dflt_vals.model_name,
-        self.__device = dflt_vals.device,
+        self.__model_name = dflt_vals.model_name
+        self.__device = dflt_vals.device
         self.__save_dir = dflt_vals.save_dir
 
         # Load FLAN-T5
