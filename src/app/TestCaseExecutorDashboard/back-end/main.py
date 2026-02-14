@@ -353,7 +353,7 @@ def download_evaluation_report(run_name: str):
         run = db.get_run_by_name(run_name)
         if not run:
             raise HTTPException(status_code=404, detail="Run not found")
-
+        
         details = db.get_all_run_details_by_run_name(run_name)
         plan_name = details[0].plan_name if details else None
         # Cache conversations
@@ -539,6 +539,7 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
         metric_name = data.metric 
         domain_name = data.domain if data.domain else None
         lang_name = data.language if data.language else None
+        provided_run_name = data.runName.strip() if data.runName else None
         try:
             max_test_cases = int(data.maxTestCases)
             print(max_test_cases)
@@ -549,7 +550,10 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
             )
         ## Create a random name for the run and generating run id
 
-        run_name = randomname.generate('v/*','adj/*','n/*','ip/*')
+        if provided_run_name:
+            run_name = provided_run_name
+        else:
+            run_name = randomname.generate('v/*','adj/*','n/*','ip/*')
         start_time = datetime.now().isoformat()
         run = Run(target=target, run_name=run_name, start_ts=start_time)
         run_id = db.add_or_update_testrun(run)
@@ -563,7 +567,29 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
             return
         print(f"Starting run with Test Plan: {plan_name}")
 
-        if metric_name:
+        if test_case_id:
+            testcases = db.get_testcase_by_id(test_case_id)
+            testcases = [testcases]
+            total_testcases = len(testcases)
+            print(f"Length of testcases: {len(testcases)}")
+            print(type(testcases))
+            
+            run.status = "RUNNING"
+            db.add_or_update_testrun(run=run)
+            
+            
+            background_tasks.add_task(
+                execute_testcases,
+                run_name,
+                run_id,
+                plan_name,
+                target,
+                
+                testcases,
+                run
+            )
+
+        elif metric_name:
             # metric_name = db.get_metric_name(metric_id=metric_id)  
             is_metric_in_plan = db.is_metric_in_testplan(metric_name=metric_name, plan_name=plan_name)  
             if not is_metric_in_plan:
@@ -666,7 +692,8 @@ def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
                 testcases,
                 run
             )
-
+        print()    
+        print(f"totalllllllsss {total_testcases}")
         return {
             "status": "success",
             "runId": run_id,
@@ -732,7 +759,7 @@ async def execute_testcases(
     client.apply_server_config()
 
     for index, testcase in enumerate(testcases, start=1):
-        print(f"⚙️ Running testcase: {testcase.name}")
+        # print(f"⚙️ Running testcase: {testcase.name}")
 
         rundetail = RunDetail(
             run_name=run_name,

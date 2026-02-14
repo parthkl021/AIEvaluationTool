@@ -7,9 +7,10 @@ import CustomSelect from './CustomSelect/CustomSelect';
 import Loop from './Loop/Loop';
 
 interface RunFormData {
+  runName?: string;   // 👈 add this
   target: string;
   testPlan: string; 
-  testCaseId: number | null;
+  testCaseId: string ;
   metric: string;     // ✅ name
   maxTestCases: string;
   domain: string;
@@ -43,16 +44,16 @@ const NewTestRunPage: React.FC = () => {
   const [planMetrics, setPlanMetrics] = useState<string[]>([]);
   
   const [formData, setFormData] = useState<RunFormData>({
+    runName: "",   
     target: "",
     testPlan: "",
-    testCaseId:null,
-    
+    testCaseId:"",
     metric: "",
-    maxTestCases: "10", // 👈 default selected
+    maxTestCases: "10", 
     domain: "",
     language: "",
   });
-  const isStartDisabled = !formData.testPlan || isRunning
+  const isStartDisabled = !formData.testPlan || !formData.target  || isRunning
   useEffect(() => {
   const fetchFilters = async () => {
     try {
@@ -133,16 +134,19 @@ const handleChange = (key: string, value: any) => {
       <h1>Create New Test Run</h1>
       <p className="subtitle">Configure and start AI evaluation run</p>
       
-      <div className="form-group">
+      
+
+      <form className="filters-container" onSubmit={handleSubmit}>
+        <div className="form-group">
         <label>Test Run Name</label>
         <input 
           type="text" 
           className="form-input" 
-          defaultValue="Regression test" 
+          placeholder="Enter run name (optional)"
+          value={formData.runName}
+          onChange={(e) => handleChange("runName", e.target.value)}
         />
       </div>
-
-      <form className="filters-container" onSubmit={handleSubmit}>
         <div className="filters-row">
           <div className="filter-item">
             <label>Target</label>
@@ -164,12 +168,12 @@ const handleChange = (key: string, value: any) => {
           <div className="filter-item">
             <label>Test Case ID</label>
             <input
-              type="number"
+              type="text"
               placeholder="Enter Test Plan ID"
               value={formData.testCaseId?? ""}
               disabled={!formData.testPlan}
               onChange={(e) =>
-                handleChange("testCaseId", Number(e.target.value))
+                handleChange("testCaseId", e.target.value)
               }
             />
           </div>
