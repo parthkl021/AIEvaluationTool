@@ -6,11 +6,17 @@
   margin-left: auto;
   margin-right: auto;
   margin-top: 3rem;
-  padding: 0 2rem 4rem;
-  background-color: #f8fafc;
+  padding: 0 80px;
+  background-color: #f0f0fa;
   min-height: calc(100vh - 70px);
   width: 100%;
   box-sizing: border-box;
+}
+
+.flex {
+  display: flex;
+  align-items: top;
+  justify-content: space-between;
 }
 
 /* ======================
@@ -23,7 +29,8 @@
   margin: 2rem 0 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
-  width: 100%;
+  width: 300px;
+  height: 600px;
   box-sizing: border-box;
 }
 
@@ -39,8 +46,8 @@
 
 .title {
   margin: 0;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: #1e293b;
   border-bottom: none;
   padding: 0;

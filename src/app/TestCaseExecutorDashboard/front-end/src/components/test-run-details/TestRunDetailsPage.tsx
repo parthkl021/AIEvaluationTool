@@ -169,9 +169,16 @@ const RunDetails: React.FC = () => {
   return (
     <div className={styles.container}>
       {/* Header Section */}
-      <div className={styles.summaryCard}>
-        <div className={styles.headerRow}>
-          <h1 className={styles.title}>
+      <div className={styles.flex}>
+      <div
+       className={styles.summaryCard}
+      >
+        <div
+        //  className={styles.headerRow}
+        >
+          <h1
+          className={styles.title}
+          >
             {summary.run_name}
           </h1>
           {/* {planNames.length > 0 && (
@@ -182,7 +189,9 @@ const RunDetails: React.FC = () => {
           )} */}
         </div>
 
-        <div className={styles.detailsGrid}>
+        <div
+        // className={styles.detailsGrid}
+        >
           <DetailCard
             label="Target"
             value={summary.target ?? "-"}
@@ -217,7 +226,7 @@ const RunDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Timeline Section */}
+      {/* Timeline Section
       <RunTimeline 
         runName={summary.run_name} 
         hoveredMetric={hoveredMetric}
@@ -225,8 +234,8 @@ const RunDetails: React.FC = () => {
         onHoverPlan={setHoveredPlan}
         onHoverMetric={setHoveredMetric} 
         
-      />
-
+      /> */}
+      <div className={styles.table}>
       {/* Filters Section */}
       <div className={styles.filtersContainer}>
         <div className={styles.filtersCard}>
@@ -246,93 +255,117 @@ const RunDetails: React.FC = () => {
 
       {/* Table Section */}
        <section className={styles.tableSection}>
-  <div className={styles.tableContainer}>
-    <div className="table-responsive">
-      <table className="table table-bordered table-hover">
-        <thead>
-          <tr>
-            <th style={{ width: '20%' }}>Plan Name</th>
-            <th>Test Case</th>
-            <th>Metric</th>
-            <th>Score</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {details.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="text-center py-4 text-muted">
-                No test case details found
-              </td>
-            </tr>
-          ) : (
-            Object.entries(groupedByPlan).flatMap(([planName, planDetails]) =>
-              planDetails.map((d, index) => {
-                // ✅ Log info when rendering each row
-                console.log("Rendering rowwwwww:", d.metric_name, "Hovered metric:", hoveredMetric);
-
-                return (
-                  <tr
-                    key={d.detail_id}
-                    role="button"
-                    className={`cursor-pointer ${
-                      hoveredMetric === d.metric_name ? styles.metricRowHover : ""
-                    }`}
-                    data-bs-toggle="modal"
-                    data-bs-target="#conversationModal"
-                    onClick={() => setSelectedConversationId(Number(d.conversation_id))}
-                    onMouseEnter={() => {
-                      console.log("Mouse enter row:", d.metric_name);
-                      setHoveredMetric(d.metric_name);
-                    }}
-                    onMouseLeave={() => {
-                      console.log("Mouse leave row:", d.metric_name);
-                      setHoveredMetric(null);
-                    }}
-                  >
-                    {/* <td >{`Metric: ${d.metric_name}, Hovered: ${hoveredMetric}, Match: ${hoveredMetric === d.metric_name}, ClassName: ${hoveredMetric === d.metric_name ? styles.metricRowHover : "NONE"}`}</td> */}
-                    {index === 0 && (
-                      <td
-                        rowSpan={planDetails.length}
-                        className={`${styles.planCell} align-middle text-center`}
-                        style={{
-                          fontWeight: 500,
-                          borderRight: '1px solid #e2e8f0',
-                          minWidth: '200px',
-                        }}
-                      >
-                        {planName}
-                      </td>
-                    )}
-                    <td className="font-medium text-gray-900">{d.testcase_name}</td>
-                    <td className="text-gray-700">{d.metric_name}</td>
-                    <td className="font-medium text-gray-900">{d.score ?? "-"}</td>
-                    <td>
-                      <span
-                        className={`${styles.statusCell} ${
-                          d.status === "Completed"
-                            ? styles.statusCompleted
-                            : d.status === "FAILED"
-                            ? styles.statusFailed
-                            : styles.statusRunning
-                        }`}
-                      >
-                        {d.status.toLowerCase()}
-                      </span>
+        <div className={styles.tableContainer}>
+          <div className="table-responsive">
+            <table className="table table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th style={{ width: '20%' }}>Plan Name</th>
+                  <th>Test Case</th>
+                  <th>Metric</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {details.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-muted">
+                      No test case details found
                     </td>
                   </tr>
-                );
-              })
-            )
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+                ) : (
+                  Object.entries(groupedByPlan).flatMap(([planName, planDetails]) =>
+                    planDetails.map((d, index) => {
+                      // ✅ Log info when rendering each row
+                      console.log("Rendering rowwwwww:", d.metric_name, "Hovered metric:", hoveredMetric);
+
+                      return (
+                        <tr
+                          key={d.detail_id}
+                          role="button"
+                          className={`cursor-pointer ${
+                            hoveredMetric === d.metric_name ? styles.metricRowHover : ""
+                          }`}
+                          data-bs-toggle="modal"
+                          data-bs-target="#conversationModal"
+                          onClick={() => setSelectedConversationId(Number(d.conversation_id))}
+                          onMouseEnter={() => {
+                            console.log("Mouse enter row:", d.metric_name);
+                            setHoveredMetric(d.metric_name);
+                          }}
+                          onMouseLeave={() => {
+                            console.log("Mouse leave row:", d.metric_name);
+                            setHoveredMetric(null);
+                          }}
+                        >
+                          {/* <td >{`Metric: ${d.metric_name}, Hovered: ${hoveredMetric}, Match: ${hoveredMetric === d.metric_name}, ClassName: ${hoveredMetric === d.metric_name ? styles.metricRowHover : "NONE"}`}</td> */}
+                          {index === 0 && (
+                            <td
+                              rowSpan={planDetails.length}
+                              className={`${styles.planCell} align-middle text-center`}
+                              style={{
+                                fontWeight: 500,
+                                borderRight: '1px solid #e2e8f0',
+                                minWidth: '200px',
+                              }}
+                            >
+                              {planName}
+                            </td>
+                          )}
+                          <td className="font-medium text-gray-900">{d.testcase_name}</td>
+                          <td className="text-gray-700">{d.metric_name}</td>
+                          <td className="font-medium text-gray-900">{d.score ?? "-"}</td>
+                          <td>
+                            <span
+                              className={`${styles.statusCell} ${
+                                d.status === "Completed"
+                                  ? styles.statusCompleted
+                                  : d.status === "FAILED"
+                                  ? styles.statusFailed
+                                  : styles.statusRunning
+                              }`}
+                            >
+                              {d.status.toLowerCase()}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+          {/* Timeline Section
+        <RunTimeline 
+          runName={summary.run_name} 
+          hoveredMetric={hoveredMetric}
+          hoveredPlan={hoveredPlan}
+          onHoverPlan={setHoveredPlan}
+          onHoverMetric={setHoveredMetric} 
+          
+        /> */}
+
+      </section>
+
+      </div>
+      </div>
 
       <Modal conversationId={selectedConversationId} />
+                {/* Timeline Section */}
+        <RunTimeline 
+          runName={summary.run_name} 
+          hoveredMetric={hoveredMetric}
+          hoveredPlan={hoveredPlan}
+          onHoverPlan={setHoveredPlan}
+          onHoverMetric={setHoveredMetric} 
+          
+        />
     </div>
+    
   );
 };
 
