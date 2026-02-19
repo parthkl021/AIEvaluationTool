@@ -54,7 +54,7 @@ class DriverManager:
         opts = Options()
         opts.add_argument("--no-sandbox")
         opts.add_argument("--start-maximized")
-        opts.add_argument("--headless") # Run Chrome in headless mode
+        # opts.add_argument("--headless") # Run Chrome in headless mode
         opts.add_argument(f"user-data-dir={self.profile_folder_path}")
         opts.add_experimental_option("excludeSwitches", ["enable-logging"])
 

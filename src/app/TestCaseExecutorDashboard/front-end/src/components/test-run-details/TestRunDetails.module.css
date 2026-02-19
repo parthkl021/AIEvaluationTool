@@ -141,22 +141,29 @@
 ====================== */
 .filtersContainer {
   margin: 2rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px; /* Increased gap for better breathing room */
+  align-items: center;
 }
 
 .filtersCard {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e2e8f0;
-  width: 100%;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  width: 180px;
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
 }
 
 .filtersTitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 1.25rem 0;
+  color: #4b5563;
+  margin: 0 0 0.9rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -178,13 +185,42 @@
   border-color: #3b82f6 !important;
 }
 
-.table tbody tr:global(.metricRowHover) :global(.planCell) {
-  background-color: transparent !important;
+.filtersCard :global(.filters) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: nowrap;
 }
 
-.table tbody tr:global(.metricRowHover) td:nth-child(2) {
-  border-left: 4px solid #3b82f6;
-  padding-left: 12px;
+.filtersCard :global(.filter) {
+  min-width: 190px;
+  height: 42px;
+  border: 1px solid #c6cdd9;
+  border-radius: 8px;
+  background-color: #f7f8fb;
+  color: #2f3d4f;
+  padding: 0 38px 0 36px;
+  font-size: 1.04rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M2 3h12l-4.8 5.2v4.2l-2.4 1.2V8.2L2 3Z' stroke='%23707e95' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(45deg, transparent 50%, #7f8ca0 50%),
+    linear-gradient(135deg, #7f8ca0 50%, transparent 50%);
+  background-position: 12px center, calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 14px 14px, 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.filtersCard :global(.filter:disabled) {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.filtersCard :global(.filter):focus {
+  outline: none;
+  border-color: #3f8ad8;
+  box-shadow: 0 0 0 3px rgba(63, 138, 216, 0.2);
 }
 
 /* ======================
@@ -237,76 +273,94 @@
 }
 
 .tableSection {
-  margin: 2rem 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 10px;
 }
 
 .tableContainer {
   overflow-x: auto;
-  background-color: white;
-  padding: 1.25rem;
+  background-color: #d9dbe1;
+  padding: 0;
   margin: 0;
   flex: 1;
   -webkit-overflow-scrolling: touch;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(16, 24, 40, 0.04);
+  border: 1px solid #c8ced7;
 }
 
-/* Custom table styling */
-.table {
+.tableLayout {
   width: 100%;
-  margin-bottom: 0;
-  border-collapse: separate;
+}
+
+.resultsTable {
+  width: 100%;
+  margin-bottom: 0px;
+  border-collapse: collapse;
   border-spacing: 0;
+  min-width: 820px;
 }
 
-/* Gradient header */
-.table thead th {
-  background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f5 100%);
-  color: #2d3748;
-  font-weight: 700;
+.resultsTable thead th {
+  background: linear-gradient(180deg, #3f8ad8 0%, #4c97e3 100%);
+  color: #fafafd;
+  font-weight: 600;
   text-align: left;
-  padding: 18px 14px;
+  padding: 16px 16px;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
-/* Table body styling */
-.table tbody td {
+.resultsTable thead th:first-child {
+  width: 23%;
+}
+
+.resultsTable tbody td {
   text-align: left;
-  padding: 16px 14px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 16px;
+  border-bottom: 1px solid #cfd4dc;
   vertical-align: middle;
-  font-size: 15px;
-  color: #374151;
+  font-size: 1.05rem;
+  color: #334155;
 }
 
-/* ======================
-   TABLE ROW HOVER EFFECTS (Normal Hover)
-====================== */
-.table tbody tr {
+.tableRow {
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
-  background-color: #fff !important;
+  background-color: #eef0f4;
 }
 
-/* Normal hover - only when NOT metricRowHover */
+/* .tableRow:nth-child(even) {
+  background-color: #e4e8ee;
+}
+
+.tableRow td {
+  background-color: transparent;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+} */
+
+.tableRow:hover td {
+  background-color: #d5dce7;
+}
+
 .metricRowHover {
-  background-color: #f8f9fa !important;
-  transform: translateY(-2px) !important;
-  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; */
-  z-index: 10 !important;
+  background-color: #d5dce7 !important;
+  z-index: 10;
 }
 
 .metricRowHover td {
-  background-color: #f8f9fa !important;
-  font-weight: 600 !important;
-  /* border-color: #e2e8f0 !important; */
+  background-color: #d5dce7 !important;
+}
+
+.planCell {
+  font-weight: 500;
+  border-right: 1px solid #c5ccd6;
+  min-width: 200px;
 }
 
 .metricRowHover :global(.planCell) {
@@ -319,7 +373,7 @@
 }
 
 /* Plan name cell hover effect */
-.table tbody tr:not(:global(.metricRowHover)):hover td:first-child {
+.resultsTable tbody tr:not(:global(.metricRowHover)):hover td:first-child {
   background-color: #f1f5f9 !important;
   font-weight: 600;
   border-left: 3px solid #3b82f6;
@@ -327,47 +381,55 @@
 }
 
 /* Add a subtle transition for smooth hover effects */
-.table td {
+.resultsTable td {
   transition: all 0.2s ease;
   vertical-align: middle;
   padding: 12px 16px !important;
 }
 
 /* Add click feedback */
-.table tbody tr:active {
+.resultsTable tbody tr:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Ensure status cell doesn't trigger hover/click */
-.table tbody tr td:last-child {
+.resultsTable  tbody tr td:last-child {
   position: relative;
   z-index: 1;
 }
 
-/* Add hover effect for status cell */
-.table tbody tr td:last-child:hover {
-  background-color: transparent;
-}
-
-/* Status cell styling */
 .statusCell {
   font-weight: 600;
-  text-transform: capitalize;
-  padding: 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 14px;
   border-radius: 20px;
-  display: inline-block;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  min-width: 92px;
 }
 
 .statusCompleted {
-  background-color: #6c757d;
-  color: #ffffff;
+  background-color: #b8e5ce;
+  color: #16a34a;
 }
 
 .statusRunning {
-  background-color: #6c757d;
-  color: #ffffff;
+  background-color: #cfe1f8;
+  color: #2563eb;
+}
+
+.statusFailed {
+  background-color: #f8cdd0;
+  color: #dc2626;
+}
+
+.statusNew {
+  background-color: #d8dee8;
+  color: #475569;
 }
 
 /* Remove Bootstrap borders */
@@ -429,9 +491,7 @@
     padding: 1.5rem;
   }
   
-  .summaryCard, 
-  .filtersCard,
-  .tableContainer {
+  .summaryCard {
     padding: 1.25rem;
   }
   
@@ -449,18 +509,16 @@
     padding: 0 16px;
   }
   
-  .summaryCard, 
-  .filtersCard,
-  .tableContainer {
+  .summaryCard {
     padding: 1.25rem;
   }
   
-  .table thead th {
+  .resultsTable thead th {
     padding: 12px 8px;
     font-size: 12px;
   }
   
-  .table tbody td {
+  .resultsTable tbody td {
     padding: 12px 8px;
     font-size: 14px;
   }
@@ -498,12 +556,12 @@
     -webkit-overflow-scrolling: touch;
   }
   
-  .table {
+  .resultsTable {
     min-width: 600px;
   }
   
-  .filtersCard {
-    padding: 1.25rem;
+  .filtersCard :global(.filter) {
+    min-width: 160px;
   }
 }
 
@@ -514,7 +572,7 @@
   
   .summaryCard,
   .filtersCard {
-    padding: 1rem;
+    padding: 0;
     margin: 1rem 0;
   }
   
@@ -527,8 +585,8 @@
     padding: 0.35rem 0.75rem;
   }
   
-  .table th,
-  .table td {
+  .resultsTable th,
+  .resultsTable td {
     padding: 12px 12px;
     font-size: 14px;
   }

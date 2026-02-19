@@ -4,7 +4,6 @@ import styles from "./TestRunDetails.module.css";
 import Modal from "./Modal";
 import RunTimeline from "./RunTimeline";
 import DetailCard from "../common/DetailCard/DetailCard";
-import Filters from "./Filters";
 import RunDetailsFilters from "../common/Filters/FiltersRunDet";
 
 
@@ -33,10 +32,6 @@ interface RunDetail {
   score?: number | null;
 }
 
-interface RunDetailsResponse {
-  summary: RunSummary;
-  details: RunDetail[];
-}
 interface FilterOption {
   filter_name: string;
 }
@@ -68,13 +63,6 @@ const RunDetails: React.FC = () => {
     metric?: string;
     status?: string;
   }>({});
-  useEffect(() => {
-    console.log("🔴 hoveredMetric changed to:", hoveredMetric);
-  }, [hoveredMetric]);
-
-  useEffect(() => {
-    console.log("🔵 hoveredPlan changed to:", hoveredPlan);
-  }, [hoveredPlan]);
   const statusMap = (status: string | null | undefined): "COMPLETED" | "RUNNING" | "FAILED" | undefined => {
     if (status === "COMPLETED" || status === "RUNNING" || status === "FAILED") return status;
     return undefined;
@@ -164,8 +152,6 @@ const RunDetails: React.FC = () => {
     return acc;
   }, {} as Record<string, RunDetail[]>);
   
-  const planNames = Object.keys(groupedByPlan);
-
   return (
     <div className={styles.container}>
       {/* Header Section */}
@@ -235,14 +221,14 @@ const RunDetails: React.FC = () => {
         onHoverMetric={setHoveredMetric} 
         
       /> */}
-      <div className={styles.table}>
+      <div className={styles.tableLayout}>
       {/* Filters Section */}
       <div className={styles.filtersContainer}>
         <div className={styles.filtersCard}>
-          <h2 className={styles.filtersTitle}>
+          {/* <h2 className={styles.filtersTitle}>
             <i className="bi-funnel"></i>
             Filter Results
-          </h2>
+          </h2> */}
           <RunDetailsFilters
             metrics={filtersData.metrics}
             statuses={filtersData.statuses}
@@ -257,10 +243,10 @@ const RunDetails: React.FC = () => {
        <section className={styles.tableSection}>
         <div className={styles.tableContainer}>
           <div className="table-responsive">
-            <table className="table table-bordered table-hover">
+            <table className={styles.resultsTable}>
               <thead>
                 <tr>
-                  <th style={{ width: '20%' }}>Plan Name</th>
+                  <th>Plan Name</th>
                   <th>Test Case</th>
                   <th>Metric</th>
                   <th>Score</th>
@@ -277,56 +263,44 @@ const RunDetails: React.FC = () => {
                 ) : (
                   Object.entries(groupedByPlan).flatMap(([planName, planDetails]) =>
                     planDetails.map((d, index) => {
-                      // ✅ Log info when rendering each row
-                      console.log("Rendering rowwwwww:", d.metric_name, "Hovered metric:", hoveredMetric);
+                      const normalizedStatus = d.status.toUpperCase();
+                      const statusClass =
+                        normalizedStatus === "COMPLETED" || normalizedStatus === "SUCCESS"
+                          ? styles.statusCompleted
+                          : normalizedStatus === "FAILED"
+                          ? styles.statusFailed
+                          : normalizedStatus === "NEW"
+                          ? styles.statusNew
+                          : styles.statusRunning;
 
                       return (
                         <tr
                           key={d.detail_id}
                           role="button"
-                          className={`cursor-pointer ${
+                          className={`${styles.tableRow} ${
                             hoveredMetric === d.metric_name ? styles.metricRowHover : ""
                           }`}
                           data-bs-toggle="modal"
                           data-bs-target="#conversationModal"
                           onClick={() => setSelectedConversationId(Number(d.conversation_id))}
-                          onMouseEnter={() => {
-                            console.log("Mouse enter row:", d.metric_name);
-                            setHoveredMetric(d.metric_name);
-                          }}
-                          onMouseLeave={() => {
-                            console.log("Mouse leave row:", d.metric_name);
-                            setHoveredMetric(null);
-                          }}
+                          onMouseEnter={() => setHoveredMetric(d.metric_name)}
+                          onMouseLeave={() => setHoveredMetric(null)}
                         >
                           {/* <td >{`Metric: ${d.metric_name}, Hovered: ${hoveredMetric}, Match: ${hoveredMetric === d.metric_name}, ClassName: ${hoveredMetric === d.metric_name ? styles.metricRowHover : "NONE"}`}</td> */}
                           {index === 0 && (
                             <td
                               rowSpan={planDetails.length}
                               className={`${styles.planCell} align-middle text-center`}
-                              style={{
-                                fontWeight: 500,
-                                borderRight: '1px solid #e2e8f0',
-                                minWidth: '200px',
-                              }}
                             >
                               {planName}
                             </td>
                           )}
-                          <td className="font-medium text-gray-900">{d.testcase_name}</td>
-                          <td className="text-gray-700">{d.metric_name}</td>
-                          <td className="font-medium text-gray-900">{d.score ?? "-"}</td>
+                          <td>{d.testcase_name}</td>
+                          <td>{d.metric_name}</td>
+                          <td>{d.score ?? "-"}</td>
                           <td>
-                            <span
-                              className={`${styles.statusCell} ${
-                                d.status === "Completed"
-                                  ? styles.statusCompleted
-                                  : d.status === "FAILED"
-                                  ? styles.statusFailed
-                                  : styles.statusRunning
-                              }`}
-                            >
-                              {d.status.toLowerCase()}
+                            <span className={`${styles.statusCell} ${statusClass}`}>
+                              {normalizedStatus}
                             </span>
                           </td>
                         </tr>
