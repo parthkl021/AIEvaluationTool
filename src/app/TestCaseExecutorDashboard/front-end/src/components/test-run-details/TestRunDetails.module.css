@@ -15,8 +15,9 @@
 
 .flex {
   display: flex;
-  align-items: top;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16px;
 }
 
 /* ======================
@@ -30,8 +31,13 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   width: 300px;
-  height: 600px;
+  height: auto;
   box-sizing: border-box;
+  position: sticky;
+  top: 150px;
+  align-self: flex-start;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .header{
@@ -575,6 +581,11 @@
   
   .filtersCard :global(.filter) {
     min-width: 160px;
+  }
+
+  .summaryCard {
+    position: static;
+    top: auto;
   }
 }
 
