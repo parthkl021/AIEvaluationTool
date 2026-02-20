@@ -25,13 +25,24 @@
 .summaryCard {
   background-color: white;
   border-radius: 12px;
-  padding: 2rem;
-  margin: 2rem 0 1.5rem;
+  padding: 20px;
+  margin: 35px 0 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   width: 300px;
   height: 600px;
   box-sizing: border-box;
+}
+
+.header{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0rem;
+  margin-top: 2rem;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .headerRow {
@@ -140,7 +151,7 @@
    FILTERS
 ====================== */
 .filtersContainer {
-  margin: 2rem 0;
+  margin: 30px 0 10px;
   display: flex;
   flex-wrap: wrap;
   gap: 16px; /* Increased gap for better breathing room */
@@ -277,6 +288,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 .tableContainer {
@@ -293,6 +305,7 @@
 
 .tableLayout {
   width: 100%;
+  padding: 10px;
 }
 
 .resultsTable {

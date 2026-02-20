@@ -80,7 +80,7 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric })
   return (
     <div className={styles.timelineCard}>
       <div className={styles.timelineHeader}>
-        <h3>Execution Timeline</h3>
+        {/* <h3>Execution Timeline</h3> */}
       </div>
       {/* HEADER */}
 
@@ -102,7 +102,7 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric })
               {/* PLAN BLOCK */}
               <div className={styles.planBlock}>
                 <div className={styles.planHeader}>
-                  {plan}
+                  <h6>Execution Timeline</h6>{plan}
                   <div className={styles.duration}>
                     {formatDuration(total)}
                   </div>

@@ -154,6 +154,7 @@ const RunDetails: React.FC = () => {
   
   return (
     <div className={styles.container}>
+      <h3 className={styles.header}>Test Run Details - <span>{summary.run_name}</span></h3>
       {/* Header Section */}
       <div className={styles.flex}>
       <div
@@ -324,20 +325,28 @@ const RunDetails: React.FC = () => {
         /> */}
 
       </section>
-
-      </div>
-      </div>
-
-      <Modal conversationId={selectedConversationId} />
-                {/* Timeline Section */}
-        <RunTimeline 
+      <RunTimeline 
           runName={summary.run_name} 
           hoveredMetric={hoveredMetric}
           hoveredPlan={hoveredPlan}
           onHoverPlan={setHoveredPlan}
           onHoverMetric={setHoveredMetric} 
           
-        />
+      />
+
+      </div>
+      </div>
+
+      <Modal conversationId={selectedConversationId} />
+                {/* Timeline Section */}
+        {/* <RunTimeline 
+          runName={summary.run_name} 
+          hoveredMetric={hoveredMetric}
+          hoveredPlan={hoveredPlan}
+          onHoverPlan={setHoveredPlan}
+          onHoverMetric={setHoveredMetric} 
+          
+        /> */}
     </div>
     
   );

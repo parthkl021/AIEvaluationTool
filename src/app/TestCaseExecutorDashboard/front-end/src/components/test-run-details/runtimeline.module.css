@@ -55,7 +55,7 @@
 
 .planHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-left;
   align-items: center;
   font-size: 13px;
   font-weight: 500;
