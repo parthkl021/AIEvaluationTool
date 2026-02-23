@@ -21,4 +21,4 @@ class Robustness_AdvInstruction(Strategy):
         """
         Evaluate the agents response for Robustness Adv Instruction using Cosine Similarity.
         """
-        return self.similarity_checker.evaluate(testcase, conversation), OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), self.similarity_checker.evaluate(testcase, conversation))
+        return self.similarity_checker.evaluate(testcase, conversation)

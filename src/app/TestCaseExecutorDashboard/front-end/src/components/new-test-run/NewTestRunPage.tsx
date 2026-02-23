@@ -37,7 +37,7 @@ const NewTestRunPage: React.FC = () => {
   const metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score'];
   const maxTestCases = ['10', '20', '30', '50', '100'];
   const domains = ['E-commerce', 'Healthcare', 'Finance', 'Education'];
-  const languages = ['English', 'Spanish', 'French', 'German', 'Chinese'];
+  const languages = ['Tamil', 'Hindi', 'Assamese', 'Bengali', 'Sindhi', 'Bodo'];
   const [isRunning, setIsRunning] = useState(false);
   const [totalTestCases, setTotalTestCases] = useState(0);
   const [filters, setFilters] = useState<AllFiltersResponse | null>(null);

@@ -9,6 +9,6 @@
     "run_mode": "single_window",
     "agent_name": "Vaidya AI",
     "application_name": "Vaidya AI",
-    "application_url": "https://web.whatsapp.com",
-    "headless": "True"
+    "application_url": "https://web.whatsapp.com/",
+    "headless": "False"
 }

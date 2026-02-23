@@ -26,10 +26,12 @@ class Robustness_OutOfDomain(Strategy):
 
     def __init__(self,
                  name:str="robustness_ood",
-                 nli_model=dflt_vals.get("nli_model_name", "cross-encoder/nli-deberta-base"),
-                 emb_model=dflt_vals.get("embed_model_name", "all-MiniLM-L6-v2"),
-                 device=dflt_vals.get("device", "cpu"),
-                 save_dir=dflt_vals.get("save_dir", "saved_evals")):
+                 nli_model=dflt_vals.nli_model_name,
+                 emb_model=dflt_vals.embed_model_name,
+                 device=dflt_vals.device,
+                 save_dir=dflt_vals.save_dir,
+                 **kwargs):
+        super().__init__(name, kwargs=kwargs)
         
         self.nli = CrossEncoder(nli_model)
         self.emb = SentenceTransformer(emb_model)
@@ -164,7 +166,9 @@ class Robustness_OutOfDomain(Strategy):
             binary: 1 = robust (correctly handled OOD), 0 = not robust
         """
 
-        v = self.rule_violation(testcase.prompt.system_prompt, testcase.prompt.user_prompt, conversation.agent_response)
+        print("name : ", self.name)
+
+        v = self.rule_violation(testcase.prompt.system_prompt, conversation.agent_response)
         d = self.domain_drift(testcase.prompt.system_prompt, testcase.prompt.user_prompt, conversation.agent_response)
         r = self.refusal_score(conversation.agent_response)
 
@@ -183,5 +187,6 @@ class Robustness_OutOfDomain(Strategy):
         
         logger.info(f"binary_score: {binary}, final_score: {final:.3f}, "
                    f"refusal_score: {r:.3f}, violation_score: {v:.3f}, semantic_drift: {d:.3f}")
+        
 
         return binary, OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name.split("_")), binary)

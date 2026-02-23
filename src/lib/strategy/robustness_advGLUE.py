@@ -55,4 +55,4 @@ class Robustness_AdvGLUE(Strategy):
 
         score = self.check_gt(conversation.agent_response, testcase.response.response_text)
         logger.info(f"Score : {score}")
-        return score, ""
+        return score, OllamaConnect.get_reason(conversation.agent_response, " ".join(self.name), score=score)

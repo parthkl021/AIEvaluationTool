@@ -754,8 +754,18 @@ async def execute_testcases(
 
     agent_name = target
     application_name = target
-    application_url = "https://web.whatsapp.com"
-    application_type = "WHATSAPP_WEB"
+    target_obj = db.get_target_by_name(target)
+    application_url = target_obj.target_url
+    APPLICATION_TYPE_MAP = {
+        "WhatsApp": "WHATSAPP_WEB",
+        "WebApp": "WEBAPP",
+        "API": "API"
+    }
+
+    if target_obj.target_type not in APPLICATION_TYPE_MAP:
+        raise ValueError(f"Unsupported target_type: {target_obj.target_type}")
+
+    application_type = APPLICATION_TYPE_MAP[target_obj.target_type]
 
     client = InterfaceManagerClient(
         base_url="http://localhost:8000",
@@ -886,7 +896,7 @@ async def execute_testcases(
         run.status = "COMPLETED"
         db.add_or_update_testrun(run=run)
     
-        # client.close()
+    client.close()
     
     print(f"✅ Finished testcase: {testcase.name}")
     await ws_manager.send_all({
