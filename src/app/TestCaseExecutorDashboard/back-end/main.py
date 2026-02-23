@@ -26,6 +26,7 @@ from lib.data import Target, Run, RunDetail, Conversation
 
 from lib.orm.tables import TestRuns
 from lib.interface_manager import InterfaceManagerClient  # Import the InterfaceManagerClient from the lib directory
+from apis.testruns import router as testruns_router
 
 # db_url = (
 #             f"mysql+mysqlconnector://"
@@ -93,10 +94,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# def run_execute_testcases(*args):
-#     import asyncio
-#     asyncio.run(execute_testcases(*args))
+app.include_router(testruns_router)
 
 
 def load_config():
@@ -159,81 +157,6 @@ def get_all_test_runs(
 
         return response
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.get(
-    "/test-runs/{run_name}",
-    response_model=TestRunFullResponse
-)
-def get_test_run(
-    run_name: str,
-    metric: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    ):
-    try:
-        
-        print(metric, status)
-        # ---------- RUN SUMMARY ----------
-        run = db.get_run_by_name(run_name)
-        if not run:
-            raise HTTPException(status_code=404, detail="Run not found")
-
-        domain_name = None
-        if getattr(run, "target_id", None):
-            target = db.get_target_by_id(run.target_id)
-            if target:
-                domain_name = getattr(target, "target_domain", None)
-
-        summary = TestRunSummaryResponse(
-            run_id=run.run_id,
-            run_name=run.run_name,
-            target=run.target,
-            domain=domain_name,
-            status=run.status,
-            start_ts=run.start_ts,
-            end_ts=run.end_ts
-        )
-
-        # ---------- RUN DETAILS ----------
-        details = db.get_all_run_details_by_run_name(run_name)
-        
-        details_response = []
-        if metric:
-            details = [d for d in details if d.metric_name == metric]
-
-        if status:
-            details = [d for d in details if d.status == status]
-            
-        for d in details:
-            score = None
-
-            if d.conversation_id:
-                conv = db.get_conversation_by_id(d.conversation_id)
-                if conv and conv.evaluation_score is not None:
-                    score = float(conv.evaluation_score)
-
-            details_response.append(
-                TestRunDetailsResponse(
-                    run_name=d.run_name,
-                    testcase_name=d.testcase_name,
-                    metric_name=d.metric_name,
-                    plan_name=d.plan_name,
-                    conversation_id=d.conversation_id,
-                    status=d.status,
-                    detail_id=d.detail_id,
-                    score=score
-                )
-            )
-
-        # ---------- FINAL RESPONSE ----------
-        return TestRunFullResponse(
-            summary=summary,
-            details=details_response
-        )
-
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
