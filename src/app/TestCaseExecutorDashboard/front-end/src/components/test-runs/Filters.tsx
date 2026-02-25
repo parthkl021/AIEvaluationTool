@@ -44,11 +44,11 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
 
   return (
     <div className={`filtersContainer ${isLoading ? 'isFetching' : ''}`}>
-      <div className="filtersList">
+      {/* <div className="filtersList">
         {filterConfigs.map((config) => (
-          <div key={config.type} className="filterWrapper withIcon">
+          <div key={config.type} className="filterWrapper withIcon"> */}
             {/* This SVG now sits inside the wrapper */}
-            <svg 
+            {/* <svg 
               xmlns="http://www.w3.org/2000/svg" 
               width="16" 
               height="16" 
@@ -72,7 +72,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
           </div>
         ))}
 
-      </div>
+      </div> */}
       <div className="header-content">
         <div className="header-actions">
           <AppButton
