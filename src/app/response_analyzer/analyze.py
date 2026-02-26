@@ -27,12 +27,8 @@ def main():
     parser.add_argument("--verbosity", "-v", dest="verbosity", type=int, choices=[0,1,2,3,4,5], help="Enable verbose output", default=5)
     parser.add_argument("--run-name", "-r", dest="run_name", type=str, help="Name of the run to evaluate")
     parser.add_argument("--force", "-f", dest="force", default=False, action="store_true", help="Force evaluation of already evaluated runs")
-    parser.add_argument(
-        "--detail-ids",
-        dest="detail_ids",
-        type=str,
-        help="Comma-separated run detail IDs to re-analyze (example: 101,104,119). If omitted, all details in the run are analyzed.",
-    )
+    parser.add_argument("--detail-ids", "-di", dest="detail_ids", type=str, help="Comma-separated run detail IDs to re-analyze (example: 101,104,119). If omitted, all details in the run are analyzed.")
+    parser.add_argument("--rerun-failed", "-rf", dest="rerun_failed", action="store_true", help="Re-evaluate only conversations where evaluation_reason is empty.")
 
     args = parser.parse_args()
 
@@ -155,6 +151,32 @@ def main():
             return
 
         logger.info(f"Analyzing selected run details only: {[detail.detail_id for detail in run_details]}")
+
+    if args.rerun_failed:
+        filtered_run_details = []
+        skipped_detail_ids = []
+
+        for detail in run_details:
+            conversation = db.get_conversation_by_id(detail.conversation_id)
+            if not conversation:
+                logger.error(f"Conversation with ID '{detail.conversation_id}' not found for run '{run.run_name}'.")
+                continue
+
+            reason = conversation.evaluation_reason or ""
+            if reason.strip() == "":
+                filtered_run_details.append(detail)
+            else:
+                skipped_detail_ids.append(detail.detail_id)
+
+        logger.info(f"--rerun-failed enabled: selected {len(filtered_run_details)} of {len(run_details)} run details with empty evaluation_reason.")
+        
+        if skipped_detail_ids:
+            logger.debug(f"Skipped run detail IDs with non-empty evaluation_reason: {skipped_detail_ids}")
+
+        run_details = filtered_run_details
+        if not run_details:
+            logger.warning(f"No run details with empty evaluation_reason found for run '{run.run_name}'. Nothing to analyze.")
+            return
     
     print(run_details)
     # let's group the all the run_details by strategy for computational convenience.
