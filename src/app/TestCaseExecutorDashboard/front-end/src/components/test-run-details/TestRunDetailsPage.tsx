@@ -156,6 +156,14 @@ const RunDetails: React.FC = () => {
   return (
     <div className={styles.container}>
       <h3 className={styles.header}>Test Run Details - <span>{summary.run_name}</span></h3>
+      <RunTimeline 
+          runName={summary.run_name} 
+          hoveredMetric={hoveredMetric}
+          hoveredPlan={hoveredPlan}
+          onHoverPlan={setHoveredPlan}
+          onHoverMetric={setHoveredMetric} 
+          
+      />
       {/* Header Section */}
       <div className={styles.flex}>
       <div
@@ -225,12 +233,12 @@ const RunDetails: React.FC = () => {
       /> */}
       <div className={styles.tableLayout}>
       {/* Filters Section */}
-      <div className={styles.filtersContainer}>
+      {/* <div className={styles.filtersContainer}>
         <div className={styles.filtersCard}>
-          {/* <h2 className={styles.filtersTitle}>
+          <h2 className={styles.filtersTitle}>
             <i className="bi-funnel"></i>
             Filter Results
-          </h2> */}
+          </h2>
           <div>
             <RunDetailsFilters
               metrics={filtersData.metrics}
@@ -253,7 +261,7 @@ const RunDetails: React.FC = () => {
             />
           </div>
 
-      </div>
+      </div> */}
 
       {/* Table Section */}
        <section className={styles.tableSection}>
@@ -338,16 +346,26 @@ const RunDetails: React.FC = () => {
           onHoverMetric={setHoveredMetric} 
           
         /> */}
+          <div>
+            <AppButton
+              label="Continue"
+              variant="outline-secondary"
+              icon="bi-play-fill"
+              size="md"
+              className="new-test-run-btn"
+              // onClick={() => navigate(`/create-test-run`)}
+            />
+          </div>
 
       </section>
-      <RunTimeline 
+      {/* <RunTimeline 
           runName={summary.run_name} 
           hoveredMetric={hoveredMetric}
           hoveredPlan={hoveredPlan}
           onHoverPlan={setHoveredPlan}
           onHoverMetric={setHoveredMetric} 
           
-      />
+      /> */}
 
       </div>
       </div>

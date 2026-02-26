@@ -4,12 +4,13 @@
 
 .timelineCard {
   position: sticky;
-  top: 70px;
+  top: 160px;
   background: white;
   z-index: 100;
   padding: 15px;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 12px;
 }
 
 /* ========================= */
@@ -47,6 +48,7 @@
   flex: 1;  /* Each plan takes equal width */
   min-width: 200px;  /* Minimum width to prevent plans from getting too narrow */
   position: relative;
+  overflow: visible;
 }
 
 /* ========================= */
@@ -55,7 +57,7 @@
 
 .planHeader {
   display: flex;
-  justify-content: space-left;
+  justify-content: space-between;
   align-items: center;
   font-size: 13px;
   font-weight: 500;

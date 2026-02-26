@@ -27,14 +27,14 @@
   background-color: white;
   border-radius: 12px;
   padding: 20px;
-  margin: 35px 0 10px;
+  margin: 10px 0 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   width: 300px;
   height: auto;
   box-sizing: border-box;
   position: sticky;
-  top: 150px;
+  top: 315px;
   align-self: flex-start;
   overflow: hidden;
   flex-shrink: 0;
@@ -45,10 +45,12 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 0rem;
-  margin-top: 2rem;
+  margin-bottom: 20px;
+  margin-top: 50px;
   gap: 16px;
   flex-wrap: wrap;
+  position: sticky;
+  top: 100px;
 }
 
 .headerRow {
