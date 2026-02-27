@@ -311,16 +311,18 @@ const TestRunsTable: React.FC<Props> = ({filters, onFilterChange}) => {
               <i className="bi bi-chevron-left"></i>
             </button>
             
-            {pageNumbers.map(number => (
-              <button
-                key={number}
-                className={`pagination-number ${number === currentPage ? 'active' : ''}`}
-                onClick={() => paginate(number)}
-                aria-label={`Page ${number}`}
-              >
-                {number}
-              </button>
-            ))}
+            <div className={`pagination-numbers-wrapper ${totalPages > 5 ? 'scrollable' : ''}`}>
+              {pageNumbers.map(number => (
+                <button
+                  key={number}
+                  className={`pagination-number ${number === currentPage ? 'active' : ''}`}
+                  onClick={() => paginate(number)}
+                  aria-label={`Page ${number}`}
+                >
+                  {number}
+                </button>
+              ))}
+            </div>
             
             <button
               className="pagination-button"

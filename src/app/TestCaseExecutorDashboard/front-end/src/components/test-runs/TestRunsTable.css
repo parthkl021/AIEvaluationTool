@@ -183,6 +183,29 @@
   gap: 4px;
 }
 
+.pagination-numbers-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.pagination-numbers-wrapper.scrollable {
+  max-width: 196px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.pagination-numbers-wrapper.scrollable::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pagination-numbers-wrapper.scrollable::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
 .pagination-button {
   display: flex;
   align-items: center;
@@ -216,6 +239,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   min-width: 36px;
   height: 36px;
   padding: 0 12px;
