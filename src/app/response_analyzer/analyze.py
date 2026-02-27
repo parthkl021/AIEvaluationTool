@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--run-name", "-r", dest="run_name", type=str, help="Name of the run to evaluate")
     parser.add_argument("--force", "-f", dest="force", default=False, action="store_true", help="Force evaluation of already evaluated runs")
     parser.add_argument("--detail-ids", "-di", dest="detail_ids", type=str, help="Comma-separated run detail IDs to re-analyze (example: 101,104,119). If omitted, all details in the run are analyzed.")
-    parser.add_argument("--rerun-failed", "-rf", dest="rerun_failed", action="store_true", help="Re-evaluate only conversations where evaluation_reason is empty.")
+    parser.add_argument("--retry-failed", "-rf", dest="retry_failed", action="store_true", help="Re-evaluate only conversations where evaluation_reason is empty.")
 
     args = parser.parse_args()
 
@@ -152,7 +152,7 @@ def main():
 
         logger.info(f"Analyzing selected run details only: {[detail.detail_id for detail in run_details]}")
 
-    if args.rerun_failed:
+    if args.retry_failed:
         filtered_run_details = []
         skipped_detail_ids = []
 
@@ -168,7 +168,7 @@ def main():
             else:
                 skipped_detail_ids.append(detail.detail_id)
 
-        logger.info(f"--rerun-failed enabled: selected {len(filtered_run_details)} of {len(run_details)} run details with empty evaluation_reason.")
+        logger.info(f"--retry-failed enabled: selected {len(filtered_run_details)} of {len(run_details)} run details with empty evaluation_reason.")
         
         if skipped_detail_ids:
             logger.debug(f"Skipped run detail IDs with non-empty evaluation_reason: {skipped_detail_ids}")
