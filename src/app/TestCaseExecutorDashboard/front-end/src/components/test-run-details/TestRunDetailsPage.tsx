@@ -346,16 +346,6 @@ const RunDetails: React.FC = () => {
           onHoverMetric={setHoveredMetric} 
           
         /> */}
-          <div>
-            <AppButton
-              label="Continue"
-              variant="outline-secondary"
-              icon="bi-play-fill"
-              size="md"
-              className="new-test-run-btn"
-              // onClick={() => navigate(`/create-test-run`)}
-            />
-          </div>
 
       </section>
       {/* <RunTimeline 
@@ -366,6 +356,16 @@ const RunDetails: React.FC = () => {
           onHoverMetric={setHoveredMetric} 
           
       /> */}
+          <div className={styles.actionsRow}>
+            <AppButton
+              label="Continue"
+              variant="outline-secondary"
+              icon="bi-play-fill"
+              size="md"
+              className="new-test-run-btn"
+              onClick={() => navigate(`/continue-test-run`)}
+            />
+          </div>
 
       </div>
       </div>

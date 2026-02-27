@@ -300,6 +300,12 @@
   margin-bottom: 20px;
 }
 
+.actionsRow {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
 .tableContainer {
   overflow-x: auto;
   background-color: #ffffff;
