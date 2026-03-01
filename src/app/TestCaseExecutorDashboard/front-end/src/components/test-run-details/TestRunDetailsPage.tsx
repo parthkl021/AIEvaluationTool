@@ -266,7 +266,7 @@ const RunDetails: React.FC = () => {
       {/* Table Section */}
        <section className={styles.tableSection}>
         <div className={styles.tableContainer}>
-          <div className="table-responsive">
+          <div className={`${styles.tableScroll} table-responsive`}>
             <table className={styles.resultsTable}>
               <thead>
                 <tr>

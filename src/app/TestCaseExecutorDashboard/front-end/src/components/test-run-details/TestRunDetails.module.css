@@ -15,7 +15,7 @@
 
 .flex {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
@@ -318,6 +318,12 @@
   border: 1px solid #e2e8f0;
 }
 
+.tableScroll {
+  max-height: 570px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
 .tableLayout {
   width: 100%;
   padding: 10px;
@@ -332,6 +338,9 @@
 }
 
 .resultsTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: linear-gradient(180deg, #2d95fd 0%, #7094bb 100%);
   color: #fafafd;
   font-weight: 600;
