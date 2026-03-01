@@ -15,7 +15,7 @@
 
 .flex {
   display: flex;
-  align-items: center;
+  align-items: top;
   justify-content: space-between;
   gap: 16px;
 }
@@ -33,11 +33,11 @@
   width: 300px;
   height: auto;
   box-sizing: border-box;
-  position: sticky;
-  top: 315px;
+  position: static;
+  top: auto;
   align-self: flex-start;
   overflow: hidden;
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .header{
@@ -325,7 +325,8 @@
 }
 
 .tableLayout {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 10px;
 }
 
