@@ -18,7 +18,7 @@ interface Props {
   hoveredPlan?: string | null;        // Make optional with ?
   onHoverPlan?: (plan: string | null) => void;  // Make optional with ?
   onHoverMetric: (metric: string | null) => void; // ✅ ADD
-  onDurationCalculated?: (seconds: number) => void;
+  onDurationCalculated?: (duration: string) => void;
 }
 
 /* ===== COMPONENT ===== */
@@ -61,9 +61,8 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric,on
     totalMs += (end - start);
   });
 
-  const totalSeconds = Math.round(totalMs / 1000);
-
-  onDurationCalculated?.(totalSeconds);
+  const formatted = formatDuration(totalMs);
+  onDurationCalculated?.(formatted);
 
 }, [events, onDurationCalculated]);
 

@@ -745,18 +745,14 @@ def continue_run(data: ContinueRunRequest):
 
 @app.post("/continue-run-with-plan")
 def continue_run_with_plan(data: NewTestRun, background_tasks: BackgroundTasks):
-
+    ensure_interface_manager_running(interface_manager_config)
     run = db.get_run_by_name(data.runName)
 
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
     # 🔒 Safety check
-    if run.target != data.target:
-        raise HTTPException(
-            status_code=400,
-            detail="Target mismatch with existing run"
-        )
+    
 
     # 🔄 Reopen if completed
     if run.status == "COMPLETED":
@@ -803,7 +799,7 @@ def continue_run_with_plan(data: NewTestRun, background_tasks: BackgroundTasks):
         run_name,
         run_id,
         plan_name,
-        data.target,
+        run.target,
         testcases,
         run
     )

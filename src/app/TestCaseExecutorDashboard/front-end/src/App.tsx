@@ -21,7 +21,7 @@ function App() {
           {/* 👇 THIS is the route you're navigating to */}
           <Route path="/test-runs/:runName" element={<TestRunDetails />} />
           <Route path="/create-test-run" element={<NewTestRunPage />} />
-          <Route path="/continue-test-run" element={<ContinueRunPage />} />
+          <Route path="/continue-run/:runName" element={<ContinueRunPage />} />
           <Route path="/__dev/config" element={<DevConfigPage />} />
         </Routes>
      </div>

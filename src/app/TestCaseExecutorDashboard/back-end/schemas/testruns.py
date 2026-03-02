@@ -48,7 +48,7 @@ class RunEvaluationSummaryResponse(BaseModel):
     evaluations: List[EvaluationItemResponse]
 
 class NewTestRun(BaseModel):
-    target: str
+    target: Optional[str] = None  # 👈 optional now
     testPlan: str          # ✅ NAME, not ID
     testCaseId: Optional[str] = None
     metric: str            # ✅ NAME

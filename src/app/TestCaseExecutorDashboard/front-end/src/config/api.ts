@@ -19,7 +19,7 @@ export const API_BASE_URL =
     GET_TARGET_METADATA: (targetName: string) =>
     `${API_BASE_URL}/targets/${encodeURIComponent(targetName)}/metadata`,
     START_RUN: `${API_BASE_URL}/start-run`,
-    
+    CONTINUE_RUN: `${API_BASE_URL}/continue-run`,    
 }  
 
 

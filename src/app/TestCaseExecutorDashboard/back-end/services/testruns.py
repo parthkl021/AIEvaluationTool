@@ -9,7 +9,7 @@ from schemas import TestRunFullResponse, TestRunSummaryResponse, TestRunDetailsR
 
 def get_test_run_service(db, run_name: str, metric: Optional[str] = None, status: Optional[str] = None):
     try:
-        print(metric, status)
+        
 
         run = db.get_run_by_name(run_name)
         if not run:
