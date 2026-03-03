@@ -5,9 +5,7 @@
   margin-top: 3rem;
   padding: 0 80px;
   background-color: #f0f0fa;
-  min-height: calc(100vh - 70px);
   width: 100%;
-  box-sizing: border-box;
 }
 
 .flex {

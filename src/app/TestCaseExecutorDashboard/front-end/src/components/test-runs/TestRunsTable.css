@@ -160,7 +160,7 @@
 
 /* ===== TABLE BODY ===== */
 .test-runs-table tbody td {
-  padding: 10px 16px;
+  padding: 8px 16px;
   font-size: 14px;
   color: #334155;
   border-bottom: 1px solid #f1f5f9;
@@ -332,7 +332,6 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  min-width: 80px;
 }
 
 .pagination-button:hover:not(:disabled) {

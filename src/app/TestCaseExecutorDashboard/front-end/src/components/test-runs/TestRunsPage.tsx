@@ -21,6 +21,9 @@ const TestRunsPage: React.FC = () => {
 
   return (
     <div className="page-container">
+      {/* <div className="header-container">
+        <Header />
+      </div> */}
       <Header />
       <Filters onFilterChange={handleFilterChange} />
       <TestRunsTable filters={activeFilters} onFilterChange={handleFilterChange} />
