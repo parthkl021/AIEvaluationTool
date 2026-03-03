@@ -332,7 +332,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  min-width: 80px;
+  min-width: 0px;
 }
 
 .pagination-button:hover:not(:disabled) {

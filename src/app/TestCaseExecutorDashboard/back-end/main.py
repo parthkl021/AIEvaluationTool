@@ -33,6 +33,7 @@ from lib.interface_manager import InterfaceManagerClient  # Import the Interface
 
 from apis.testruns import router as testruns_router
 from apis.filters import router as filters_router
+from apis.analyse import router as analyse_router
 
 # db_url = (
 #             f"mysql+mysqlconnector://"
@@ -114,6 +115,7 @@ app.add_middleware(
 
 app.include_router(testruns_router)
 app.include_router(filters_router)
+app.include_router(analyse_router)
 
 def load_config():
     with open(config_path , "r") as f:
@@ -823,159 +825,177 @@ async def execute_testcases(
     run
 ):
     print(f"🚀 Background execution started for run {run_id}")
+    client = None
+    try:
+        agent_name = target
+        application_name = target
+        target_obj = db.get_target_by_name(target)
+        application_url = target_obj.target_url
+        APPLICATION_TYPE_MAP = {
+            "WhatsApp": "WHATSAPP_WEB",
+            "WebApp": "WEBAPP",
+            "API": "API"
+        }
+        print("target object", target_obj)
+        if target_obj.target_type not in APPLICATION_TYPE_MAP:
+            raise ValueError(f"Unsupported target_type: {target_obj.target_type}")
 
-    agent_name = target
-    application_name = target
-    target_obj = db.get_target_by_name(target)
-    application_url = target_obj.target_url
-    APPLICATION_TYPE_MAP = {
-        "WhatsApp": "WHATSAPP_WEB",
-        "WebApp": "WEBAPP",
-        "API": "API"
-    }
-    print("target object",target_obj)
-    if target_obj.target_type not in APPLICATION_TYPE_MAP:
-        raise ValueError(f"Unsupported target_type: {target_obj.target_type}")
+        application_type = APPLICATION_TYPE_MAP[target_obj.target_type]
 
-    application_type = APPLICATION_TYPE_MAP[target_obj.target_type]
-
-    client = InterfaceManagerClient(
-        base_url="http://localhost:8000",
-        application_type=application_type,
-        agent_name=agent_name
-    )
-    await ws_manager.send_all({
-        "type": "RUN_STARTED",
-        "runId": run_id,
-        "total": len(testcases)
-    })
-    client.sync_config({
-        "application_name": application_name,
-        "application_type": application_type,
-        "agent_name": agent_name,
-        "application_url": application_url
-    })
-    client.apply_server_config()
-
-    for index, testcase in enumerate(testcases, start=1):
-        # print(f"⚙️ Running testcase: {testcase.name}")
-
-        rundetail = RunDetail(
-            run_name=run_name,
-            plan_name=plan_name,
-            metric_name=testcase.metric,
-            testcase_name=testcase.name
+        client = InterfaceManagerClient(
+            base_url="http://localhost:8000",
+            application_type=application_type,
+            agent_name=agent_name
         )
-        rundetail_id = db.add_or_update_testrun_detail(rundetail)
-        run_status = db.get_status_by_run_detail_id(run_detail_id=rundetail_id)
-        if run_status is not None and run_status == "COMPLETED":
-            print(f"Run detail for testcase {testcase.name} (ID: {testcase.testcase_id}) is already completed. Skipping execution.")
-            continue
-
-        message_to_agent = testcase.prompt.user_prompt or ""
-        if testcase.prompt.system_prompt:
-            message_to_agent = testcase.prompt.system_prompt + " " + message_to_agent
-
-        conv = Conversation(target=target, 
-                            run_detail_id=rundetail_id, 
-                            testcase=testcase.name)
-        conv_id = db.add_or_update_conversation(conversation=conv)    
-        print(f"A new conversation is created with ID: {conv_id}")
-
-        # await ws_manager.send_all({
-        #     "type": "STEP_UPDATE",
-        #     "runId": run_id,
-        #     "testcaseIndex": index,
-        #     "step": 1,
-        #     "status": "RUNNING"
-        # })
-        rundetail.status = "RUNNING"
-        db.add_or_update_testrun_detail(rundetail)
-        conv.prompt_ts = datetime.now().isoformat()
-        db.add_or_update_conversation(conversation=conv)
-
-        await step({
-            "type": "STEP_UPDATE",
-            "runId": run_id,
-            "testcaseIndex": index,
-            "step": 1,
-            "status": "DONE"
-        })
         await ws_manager.send_all({
-            "type": "STEP_UPDATE",
+            "type": "RUN_STARTED",
             "runId": run_id,
-            "testcaseIndex": index,
-            "step": 2,
-            "status": "RUNNING"
+            "total": len(testcases)
         })
-        response_from_agent = client.chat(
-            chat_id=testcase.testcase_id,
-            prompt_list=[message_to_agent]
-        )
-        await step({
-            "type": "STEP_UPDATE",
-            "runId": run_id,
-            "testcaseIndex": index,
-            "step": 2,
-            "status": "DONE"
-        })
-        # await ws_manager.send_all({
-        #     "type": "STEP_UPDATE",
-        #     "runId": run_id,
-        #     "testcaseIndex": index,
-        #     "step": 3,
-        #     "status": "RUNNING"
-        # })
-        agent_response = response_from_agent.json().get("response", "")
-        if len(agent_response) == 0 or agent_response[0]['response'] == "Chat not found":
-            print(f"No response received from the agent for test case {testcase.testcase_id}.")
-            rundetail.status = "FAILED"
-            db.add_or_update_testrun_detail(rundetail)
-            continue
-        conv.response_ts = datetime.now().isoformat()
-        conv.agent_response = agent_response[0]['response']
-        db.add_or_update_conversation(conversation=conv)
 
-        await step({
-            "type": "STEP_UPDATE",
-            "runId": run_id,
-            "testcaseIndex": index,
-            "step": 3,
-            "status": "DONE"
-        })
-        # await ws_manager.send_all({
-        #     "type": "STEP_UPDATE",
-        #     "runId": run_id,
-        #     "testcaseIndex": index,
-        #     "step": 4,
-        #     "status": "RUNNING"
-        # })
-        await step({
-            "type": "STEP_UPDATE",
-            "runId": run_id,
-            "testcaseIndex": index,
-            "step": 4,
-            "status": "DONE"
-        })
-        await step({
-            "type": "TESTCASE_FINISHED",
-            "runId": run_id,
-            "current": index
-        })
-        rundetail.status = "COMPLETED"
-        db.add_or_update_testrun_detail(rundetail)
+        try:
+            client.sync_config({
+                "application_name": application_name,
+                "application_type": application_type,
+                "agent_name": agent_name,
+                "application_url": application_url
+            })
+            client.apply_server_config()
+        except Exception as e:
+            print(f"Interface manager setup failed for run {run_id}: {e}")
+            run.status = "FAILED"
+            run.end_ts = datetime.now().isoformat()
+            db.add_or_update_testrun(run=run)
+            await ws_manager.send_all({
+                "type": "RUN_FINISHED",
+                "runId": run_id,
+                "status": "FAILED",
+                "error": str(e)
+            })
+            return
+
+        for index, testcase in enumerate(testcases, start=1):
+            rundetail = None
+            try:
+                rundetail = RunDetail(
+                    run_name=run_name,
+                    plan_name=plan_name,
+                    metric_name=testcase.metric,
+                    testcase_name=testcase.name
+                )
+                rundetail_id = db.add_or_update_testrun_detail(rundetail)
+                run_status = db.get_status_by_run_detail_id(run_detail_id=rundetail_id)
+                if run_status is not None and run_status == "COMPLETED":
+                    print(f"Run detail for testcase {testcase.name} (ID: {testcase.testcase_id}) is already completed. Skipping execution.")
+                    continue
+
+                message_to_agent = testcase.prompt.user_prompt or ""
+                if testcase.prompt.system_prompt:
+                    message_to_agent = testcase.prompt.system_prompt + " " + message_to_agent
+
+                conv = Conversation(
+                    target=target,
+                    run_detail_id=rundetail_id,
+                    testcase=testcase.name
+                )
+                conv_id = db.add_or_update_conversation(conversation=conv)
+                print(f"A new conversation is created with ID: {conv_id}")
+
+                rundetail.status = "RUNNING"
+                db.add_or_update_testrun_detail(rundetail)
+                conv.prompt_ts = datetime.now().isoformat()
+                db.add_or_update_conversation(conversation=conv)
+
+                await step({
+                    "type": "STEP_UPDATE",
+                    "runId": run_id,
+                    "testcaseIndex": index,
+                    "step": 1,
+                    "status": "DONE"
+                })
+                await ws_manager.send_all({
+                    "type": "STEP_UPDATE",
+                    "runId": run_id,
+                    "testcaseIndex": index,
+                    "step": 2,
+                    "status": "RUNNING"
+                })
+                response_from_agent = client.chat(
+                    chat_id=testcase.testcase_id,
+                    prompt_list=[message_to_agent]
+                )
+                await step({
+                    "type": "STEP_UPDATE",
+                    "runId": run_id,
+                    "testcaseIndex": index,
+                    "step": 2,
+                    "status": "DONE"
+                })
+                agent_response = response_from_agent.json().get("response", "")
+                if len(agent_response) == 0 or agent_response[0]['response'] == "Chat not found":
+                    print(f"No response received from the agent for test case {testcase.testcase_id}.")
+                    rundetail.status = "FAILED"
+                    db.add_or_update_testrun_detail(rundetail)
+                    continue
+                conv.response_ts = datetime.now().isoformat()
+                conv.agent_response = agent_response[0]['response']
+                db.add_or_update_conversation(conversation=conv)
+
+                await step({
+                    "type": "STEP_UPDATE",
+                    "runId": run_id,
+                    "testcaseIndex": index,
+                    "step": 3,
+                    "status": "DONE"
+                })
+                await step({
+                    "type": "STEP_UPDATE",
+                    "runId": run_id,
+                    "testcaseIndex": index,
+                    "step": 4,
+                    "status": "DONE"
+                })
+                await step({
+                    "type": "TESTCASE_FINISHED",
+                    "runId": run_id,
+                    "current": index
+                })
+                rundetail.status = "COMPLETED"
+                db.add_or_update_testrun_detail(rundetail)
+            except Exception as e:
+                print(f"Testcase execution failed for run {run_id}, testcase index {index}: {e}")
+                if rundetail is not None:
+                    rundetail.status = "FAILED"
+                    db.add_or_update_testrun_detail(rundetail)
+                continue
+
         run.end_ts = datetime.now().isoformat()
         run.status = "COMPLETED"
         db.add_or_update_testrun(run=run)
-    
-    client.close()
-    
-    print(f"✅ Finished testcase: {testcase.name}")
-    await ws_manager.send_all({
-        "type": "RUN_FINISHED",
-        "runId": run_id
-    })
-    print(f"🏁 Background execution finished for run {run_id}")
+        await ws_manager.send_all({
+            "type": "RUN_FINISHED",
+            "runId": run_id,
+            "status": "COMPLETED"
+        })
+        print(f"🏁 Background execution finished for run {run_id}")
+
+    except Exception as e:
+        print(f"Background execution failed for run {run_id}: {e}")
+        run.status = "FAILED"
+        run.end_ts = datetime.now().isoformat()
+        db.add_or_update_testrun(run=run)
+        try:
+            await ws_manager.send_all({
+                "type": "RUN_FINISHED",
+                "runId": run_id,
+                "status": "FAILED",
+                "error": str(e)
+            })
+        except Exception as ws_error:
+            print(f"Failed to push RUN_FINISHED for failed run {run_id}: {ws_error}")
+    finally:
+        if client is not None:
+            client.close()
 
 @app.get("/get_metrics_by_plan/{plan_name}", response_model=list[FilterResponse])
 def get_metrics_by_plan(plan_name: str):

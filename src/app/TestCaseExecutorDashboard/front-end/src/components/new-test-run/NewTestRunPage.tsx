@@ -209,6 +209,18 @@ const handleChange = (key: string, value: any) => {
             />
           </div>
           <div className="filter-item">
+            <label>Metric </label>
+            <CustomSelect
+              options={planMetrics}
+              defaultText={
+                formData.testPlan ? "Select Metric" : "Select Test Plan first"
+              }
+              
+              disabled={!formData.testPlan}
+              onChange={(val) => handleChange("metric", val)}
+            />
+          </div>
+          <div className="filter-item">
             <label>Test Case ID</label>
             <input
               type="text"
@@ -221,18 +233,7 @@ const handleChange = (key: string, value: any) => {
             />
           </div>
 
-          <div className="filter-item">
-            <label>Metric </label>
-            <CustomSelect
-              options={planMetrics}
-              defaultText={
-                formData.testPlan ? "Select Metric" : "Select Test Plan first"
-              }
-              
-              disabled={!formData.testPlan}
-              onChange={(val) => handleChange("metric", val)}
-            />
-          </div>
+          
         </div>
 
         <div className="filters-row">
