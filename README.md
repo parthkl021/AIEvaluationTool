@@ -301,6 +301,9 @@ AIEvaluationTool/
 - `response_analyzer/` - Analyzes responses and applies evaluation strategies
 - `sarvam_ai/` - Hosts multiple specialized AI models for evaluation
 - `TDMS/` - Web-based system for test data management and user access control
+- `prompt_quality_evaluation_tool/` - Streamlit-based UI for assessing prompt and response quality using LLM-based evaluation
+- `TestCaseExecutorDashboard/` - Web application for orchestrating, monitoring, and analyzing test case execution with real-time updates
+- `maintenance/` - System utilities for database cleanup & language correction operations
 
 ---
 
