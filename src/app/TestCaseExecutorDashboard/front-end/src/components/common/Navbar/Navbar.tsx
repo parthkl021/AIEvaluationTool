@@ -1,11 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import logo from '../../../../src/assets/logo/cerai-logo.png';
 import iit from '../../../../src/assets/iitm/iit-logo.png';
 import wsai from '../../../../src/assets/logo/WSAI_Logo.png';
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('role');
+    navigate('/login');
+  };
+
   return (
     <nav className={styles.navbar}>
       <div className={styles.navContainer}>
@@ -14,20 +24,29 @@ const Navbar: React.FC = () => {
           <h1 className={styles.navTitle}>AI Evaluation Tool</h1>
         </div>
 
-        {/* Right Section: Logos with Separators */}
-        <div className={styles.logoGroup}>
+        {/* Right Section: User info and Logout */}
+        <div className={styles.userSection}>
+          <span className={styles.userName}>
+            {localStorage.getItem('user_name') || 'User'}
+          </span>
+          <button onClick={handleLogout} className={styles.logoutButton}>
+            Logout
+          </button>
+
+          <div className={styles.divider}></div>
+
           <Link to="/" className={styles.logoWrapper}>
             <img src={logo} alt="Partner Logo 1" className={styles.logoImage} />
           </Link>
-          
+
           <div className={styles.divider}></div>
-          
+
           <Link to="/" className={styles.logoWrapper}>
             <img src={wsai} alt="Partner Logo 2" className={styles.logoImage} />
           </Link>
-          
+
           <div className={styles.divider}></div>
-          
+
           <Link to="/" className={styles.logoWrapper}>
             <img src={iit} alt="Partner Logo 3" className={styles.logoImage} />
           </Link>

@@ -8,6 +8,7 @@ import iitLogo from "@/assets/iit-logo.png";
 import iitBackground from "@/assets/iit-background.jpeg";
 import { useToast } from "@/hooks/use-toast";
 import { API_ENDPOINTS } from "@/config/api";
+import { setStoredTokens } from "@/utils/auth";
 
 import {Eye, EyeOff} from "lucide-react";
 
@@ -55,14 +56,13 @@ const Login = () => {
 
       const data = await response.json();
 
-      if (response.ok && data.Status) {
-        // Store the access token in localStorage
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("user_name", username);
+      if (response.ok) {
+        // Store tokens using auth utility
+        setStoredTokens(data);
         
         toast({
           title: "Success",
-          description: data.message || "Login successful",
+          description: "Login successful",
           variant: "success",
         });
         

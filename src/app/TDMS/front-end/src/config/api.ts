@@ -2,9 +2,14 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+export const AUTH_SERVICE_URL =
+  import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:8001";
+
 // API endpoints
 export const API_ENDPOINTS = {
-  LOGIN: `${API_BASE_URL}/login`,
+  LOGIN: `${AUTH_SERVICE_URL}/login`,
+  LOGOUT: `${AUTH_SERVICE_URL}/logout`,
+  REFRESH: `${AUTH_SERVICE_URL}/refresh`,
   DASHBOARD: `${API_BASE_URL}/api/dashboard`,
   TEST_CASES: `${API_BASE_URL}/api/testcases`,
   TEST_CASE_BY_ID: (testcase_id: number) =>

@@ -2,10 +2,11 @@ from fastapi import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from typing import Optional
 from jose import jwt, JWTError
-from config.settings import settings
+import os
 
+SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "@cerai")
+ALGORITHM = "HS256"
 
 class AuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, exclude_paths=None):
@@ -27,18 +28,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         if auth_header and auth_header.startswith("Bearer"):
             token = auth_header[len("Bearer "):]
-        else:
-            # Special case for dashboard API that might use query param
-            if path == "/api/v1/dashboard":
-                raw_token = request.query_params.get("token")
-                if raw_token and raw_token.startswith("Bearer "):
-                    token = raw_token[len("Bearer "):]
 
         if not token:
             return JSONResponse({"detail": "Authorization header missing"}, status_code=401)
 
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             if payload.get("type") != "access":
                 return JSONResponse({"detail": "Invalid token type"}, status_code=401)
             request.state.user = payload

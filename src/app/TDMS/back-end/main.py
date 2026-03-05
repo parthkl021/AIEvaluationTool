@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from api.v1.endpoints import (
-    auth,
     dashboard,
     #     domain,
     #     language,
@@ -92,7 +91,6 @@ app.add_middleware(
 # app.add_middleware(AuthMiddleware)
 
 
-app.include_router(auth.auth_router, tags=["Authentication"])
 app.include_router(dashboard.dashboard_router, tags=["Dashboard"])
 # app.include_router(testCase.testcase_router, tags=["Test Cases"])
 # app.include_router(response.response_router, tags=["Responses"])

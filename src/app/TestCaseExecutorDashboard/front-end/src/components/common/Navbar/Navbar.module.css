@@ -35,6 +35,34 @@
   gap: 15px; /* Spacing between logos and lines */
 }
 
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.userName {
+  font-size: 0.9rem;
+  color: #1a365d;
+  font-weight: 500;
+}
+
+.logoutButton {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #1a365d;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutButton:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
 .logoWrapper {
   display: flex;
   align-items: center;

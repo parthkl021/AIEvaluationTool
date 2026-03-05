@@ -31,8 +31,7 @@ from lib.orm.tables import TestRuns
 from lib.interface_manager import InterfaceManagerClient  # Import the InterfaceManagerClient from the lib directory
 
 
-from apis.testruns import router as testruns_router
-from apis.filters import router as filters_router
+from middleware.auth import AuthMiddleware
 
 # db_url = (
 #             f"mysql+mysqlconnector://"
@@ -111,6 +110,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(AuthMiddleware)
 
 app.include_router(testruns_router)
 app.include_router(filters_router)
