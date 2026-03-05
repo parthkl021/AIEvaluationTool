@@ -57,6 +57,8 @@ def get_db():
         db.close()
 
 def init_db():
+    # Ensure ORM models are imported so their tables are registered on Base.metadata
+    from models import user  # noqa: F401
     Base.metadata.create_all(bind=engine, checkfirst=True)
 
 def seed_users():
