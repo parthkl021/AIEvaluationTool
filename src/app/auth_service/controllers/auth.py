@@ -9,6 +9,16 @@ from typing import Dict
 # In-memory storage for refresh tokens (in production, use Redis or database)
 refresh_token_store: Dict[str, str] = {}
 
+
+def _normalize_role(role) -> str:
+    if isinstance(role, str):
+        return role
+    for attr in ("value", "code", "name"):
+        value = getattr(role, attr, None)
+        if isinstance(value, str):
+            return value
+    return str(role)
+
 def authenticate_user(db: Session, user: LoginRequest):
     db_user = get_user_by_username(db, user.user_name)
     if not db_user:
@@ -33,10 +43,11 @@ def authenticate_user(db: Session, user: LoginRequest):
 
 def login(db: Session, user: LoginRequest) -> TokenResponse:
     db_user = authenticate_user(db, user)
+    role = _normalize_role(db_user.role)
 
     token_data = {
         "user_name": db_user.user_name,
-        "role": db_user.role,
+        "role": role,
         "user_id": db_user.user_id
     }
 
@@ -50,7 +61,7 @@ def login(db: Session, user: LoginRequest) -> TokenResponse:
         access_token=access_token,
         refresh_token=refresh_token,
         user_name=db_user.user_name,
-        role=db_user.role
+        role=role
     )
 
 def refresh_access_token(db: Session, token_data: RefreshTokenRequest):
@@ -69,11 +80,12 @@ def refresh_access_token(db: Session, token_data: RefreshTokenRequest):
         db_user = get_user_by_username(db, user_name)
         if not db_user or not db_user.is_active:
             raise HTTPException(status_code=401, detail="User not found or deactivated")
+        role = _normalize_role(db_user.role)
 
         # Generate new tokens
         token_data_dict = {
             "user_name": db_user.user_name,
-            "role": db_user.role,
+            "role": role,
             "user_id": db_user.user_id
         }
         new_access_token = create_access_token(data=token_data_dict)
@@ -87,7 +99,7 @@ def refresh_access_token(db: Session, token_data: RefreshTokenRequest):
             access_token=new_access_token,
             refresh_token=new_refresh_token,
             user_name=db_user.user_name,
-            role=db_user.role
+            role=role
         )
 
     except ValueError as e:
