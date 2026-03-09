@@ -14,6 +14,7 @@ import Sidebar from "./components/common/sidebar/sidebar";
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const loginUrl = process.env.REACT_APP_LOGIN_URL || "http://localhost:8080/login";
 
   useEffect(() => {
     // Check if user is authenticated
@@ -27,12 +28,15 @@ function App() {
   }
 
   // if (!isAuthenticated) {
-  //   return <Login />;
+
   // }
 
   return (
     <div className="app-container">
-      <Sidebar />
+      <div className="sidebar">
+        <Sidebar />
+      </div>
+
       <main className="main-content">
         <Routes>
           <Route path="/" element={<TestRunsPage />} />

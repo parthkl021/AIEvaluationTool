@@ -1,22 +1,38 @@
-.App{
-  background-color: #f5f7fa;
-  height: 100vh;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-html, body {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
-  
-  background-color: #f5f7fa;
+  min-height: 100vh;
+  background-color: #eceff7;
 }
+
 .app-container {
   display: flex;
-  flex-direction: row;
+  min-height: 100vh;
+  background-color: #eceff7;
+}
+
+.sidebar {
+  width: 224px;
+  min-width: 224px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #5252c2;
+  z-index: 20;
+}
+
+.sidebar > aside {
+  width: 224px;
   min-height: 100vh;
 }
+
 .main-content {
   flex: 1;
+  margin-left: 224px;
   padding: 20px;
-  background-color: #f8fafc; /* Light background color */
+  background-color: #eceff7;
+  min-height: 100vh;
 }

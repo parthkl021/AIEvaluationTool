@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("AUTH_SECRET_KEY", "@cerai")
     REFRESH_SECRET_KEY: str = os.getenv("AUTH_REFRESH_SECRET_KEY", "@cerai_refresh")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 512
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database settings
