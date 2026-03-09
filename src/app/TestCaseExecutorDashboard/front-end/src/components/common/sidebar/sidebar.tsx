@@ -2,9 +2,9 @@ import { Home, Users, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ceraiLogo from "@/assets/cerai-logo.png";
-import { API_ENDPOINTS } from "@/config/api";
+// import { API_ENDPOINTS } from "@/config/api";
 import { useToast } from "@/hooks/use-toast";
-import { hasPermission } from "@/utils/permissions";
+// import { hasPermission } from "@/utils/permissions";
 
 interface UserInfo {
   user_name: string;
@@ -16,7 +16,10 @@ interface NavItem {
   icon: typeof Home;
   label: string;
   path: string;
-  requiredPermission?: keyof import("@/utils/permissions").RolePermissions;
+  externalUrl01?: string;
+  externalUrl02?: string;
+  externalUrl03?: string;
+  // requiredPermission?: keyof import("@/utils/permissions").RolePermissions;
 }
 
 const Sidebar = () => {
@@ -25,6 +28,9 @@ const Sidebar = () => {
   const { toast } = useToast();
   const [userInfo, setUserInfo] = useState<UserInfo>({ user_name: "UserName", email: "", role: "Admin" });
   const [isLoading, setIsLoading] = useState(true);
+  const testData = ;
+  const userList = ;
+  const currentUser = ;
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -47,9 +53,11 @@ const Sidebar = () => {
           setUserInfo(data);
         } else if (response.status === 401) {
           // Token expired or invalid
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("user_name");
-          navigate("/");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+    navigate("/");
           toast({
             title: "Session Expired",
             description: "Please login again",
@@ -106,24 +114,24 @@ const Sidebar = () => {
             return hasPermission(userInfo.role, item.requiredPermission);
           })
           .map((item) => {
-            const Icon = item.icon;
+          const Icon = item.icon;
             const isActive = location.pathname === item.path;
             
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
                   isActive
                     ? "bg-white text-primary font-medium"
                     : "text-primary-foreground/80 hover:bg-white/10"
                 }`}
-              >
+            >
                 <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t border-white/10">
