@@ -2,9 +2,7 @@ import { Home, Users, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ceraiLogo from "@/assets/cerai-logo.png";
-// import { API_ENDPOINTS } from "@/config/api";
 import { useToast } from "@/hooks/use-toast";
-// import { hasPermission } from "@/utils/permissions";
 
 interface UserInfo {
   user_name: string;
@@ -16,10 +14,7 @@ interface NavItem {
   icon: typeof Home;
   label: string;
   path: string;
-  externalUrl01?: string;
-  externalUrl02?: string;
-  externalUrl03?: string;
-  // requiredPermission?: keyof import("@/utils/permissions").RolePermissions;
+  externalUrl?: string;
 }
 
 const Sidebar = () => {
@@ -28,9 +23,11 @@ const Sidebar = () => {
   const { toast } = useToast();
   const [userInfo, setUserInfo] = useState<UserInfo>({ user_name: "UserName", email: "", role: "Admin" });
   const [isLoading, setIsLoading] = useState(true);
-  const testData = ;
-  const userList = ;
-  const currentUser = ;
+  const testDataUrl = process.env.REACT_APP_TEST_DATA_URL || "/";
+  const userListUrl = process.env.REACT_APP_USER_LIST_URL || "/users";
+  const currentUserUrl =
+    process.env.REACT_APP_CURRENT_USER_URL ||
+    `${process.env.REACT_APP_API_BASE_URL || ""}/api/users/me`;
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -41,7 +38,7 @@ const Sidebar = () => {
           return;
         }
 
-        const response = await fetch(API_ENDPOINTS.CURRENT_USER, {
+        const response = await fetch(currentUserUrl, {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -82,16 +79,12 @@ const Sidebar = () => {
     };
 
     fetchUserInfo();
-  }, [navigate, toast]);
+  }, [currentUserUrl, navigate, toast]);
 
   const navItems: NavItem[] = [
-    { icon: Home, label: "Home", path: "/dashboard" },
-    { 
-      icon: Users, 
-      label: "User's List", 
-      path: "/users",
-      requiredPermission: "canManageUsers" // Only visible to Admin role
-    },
+    { icon: Home, label: "Home", path: "/" },
+    { icon: Home, label: "Test Data", path: "", externalUrl: testDataUrl },
+    { icon: Users, label: "User's List", path: "", externalUrl: userListUrl },
   ];
 
   return (
@@ -105,32 +98,37 @@ const Sidebar = () => {
 
       <nav className="flex-1 px-3 mt-8">
         {navItems
-          .filter((item) => {
-            // If no permission required, show to all users
-            if (!item.requiredPermission) {
-              return true;
-            }
-            // Check if user has the required permission
-            return hasPermission(userInfo.role, item.requiredPermission);
-          })
           .map((item) => {
           const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
+            const isActive = !item.externalUrl && location.pathname === item.path;
+
+            if (item.externalUrl) {
+              return (
+                <a
+                  key={`${item.label}-${item.externalUrl}`}
+                  href={item.externalUrl}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors text-primary-foreground/80 hover:bg-white/10"
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </a>
+              );
+            }
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
                   isActive
                     ? "bg-white text-primary font-medium"
                     : "text-primary-foreground/80 hover:bg-white/10"
                 }`}
-            >
+              >
                 <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </Link>
-          );
+                <span>{item.label}</span>
+              </Link>
+            );
         })}
       </nav>
 
