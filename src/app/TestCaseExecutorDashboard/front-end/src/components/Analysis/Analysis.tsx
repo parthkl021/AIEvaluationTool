@@ -50,6 +50,12 @@ interface AnalysisProgressMessage {
   error?: string;
 }
 
+const toFiniteNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
 const formatDuration = (start: string, end: string | null): string => {
   if (!start || !end) return "-";
   const startMs = new Date(start).getTime();
@@ -78,7 +84,10 @@ const Analysis: React.FC = () => {
   const [details, setDetails] = useState<RunDetail[]>([]);
   const [analysisStartTs, setAnalysisStartTs] = useState<string | null>(null);
   const [analysisEndTs, setAnalysisEndTs] = useState<string | null>(null);
+  const [analysisCurrent, setAnalysisCurrent] = useState<number>(0);
+  const [analysisTotal, setAnalysisTotal] = useState<number>(0);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+  const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [liveProgress, setLiveProgress] = useState<AnalysisProgressMessage | null>(null);
 
   const orderedDetails = useMemo(
@@ -114,18 +123,30 @@ const Analysis: React.FC = () => {
       setAnalysisEndTs(payload.analysisEndTs);
     }
 
-    if (typeof payload.detailId === "number") {
-      const idx = orderedDetailsRef.current.findIndex((d) => d.detail_id === payload.detailId);
+    const detailId = toFiniteNumber(payload.detailId);
+    const current = toFiniteNumber(payload.current);
+    const total = toFiniteNumber(payload.total);
+    const score = toFiniteNumber(payload.score);
+
+    if (current !== null) {
+      setAnalysisCurrent(current);
+    }
+    if (total !== null) {
+      setAnalysisTotal(total);
+    }
+
+    if (detailId !== null) {
+      const idx = orderedDetailsRef.current.findIndex((d) => d.detail_id === detailId);
       if (idx >= 0) {
         setCurrentStepIndex(idx);
       }
-    } else if (typeof payload.current === "number" && payload.current > 0) {
-      setCurrentStepIndex(Math.max(0, payload.current - 1));
+    } else if (current !== null && current > 0) {
+      setCurrentStepIndex(Math.max(0, current - 1));
     }
 
-    if (typeof payload.score === "number" && typeof payload.detailId === "number") {
+    if (score !== null && detailId !== null) {
       setDetails((prev) =>
-        prev.map((d) => (d.detail_id === payload.detailId ? { ...d, score: payload.score } : d))
+        prev.map((d) => (d.detail_id === detailId ? { ...d, score } : d))
       );
     }
   }, []);
@@ -153,6 +174,19 @@ const Analysis: React.FC = () => {
       if (statusData.analysis_start_ts) setAnalysisStartTs(statusData.analysis_start_ts);
       if (statusData.analysis_end_ts) setAnalysisEndTs(statusData.analysis_end_ts);
 
+      const polledCurrent = toFiniteNumber(statusData.current);
+      const polledTotal = toFiniteNumber(statusData.total);
+      if (polledCurrent !== null || polledTotal !== null) {
+        applyProgress({
+          type: "ANALYSIS_PROGRESS",
+          runName,
+          current: polledCurrent ?? undefined,
+          total: polledTotal ?? undefined,
+          analysisStartTs: statusData.analysis_start_ts,
+          analysisEndTs: statusData.analysis_end_ts,
+        });
+      }
+
       if (statusData.status === "RUNNING") {
         setIsAnalysing(true);
         setIsCompleted(false);
@@ -160,6 +194,11 @@ const Analysis: React.FC = () => {
         setIsAnalysing(false);
         setIsCompleted(true);
         await fetchDetails(runName, true);
+        if (orderedDetailsRef.current.length > 0) {
+          const last = orderedDetailsRef.current.length - 1;
+          setCurrentStepIndex(last);
+          setSelectedStepIndex(last);
+        }
         if (statusTimer) {
           window.clearInterval(statusTimer);
           statusTimer = null;
@@ -226,6 +265,11 @@ const Analysis: React.FC = () => {
             setIsCompleted(true);
             applyProgress(payload);
             await fetchDetails(runName, true);
+            if (orderedDetailsRef.current.length > 0) {
+              const last = orderedDetailsRef.current.length - 1;
+              setCurrentStepIndex(last);
+              setSelectedStepIndex(last);
+            }
             return;
           }
 
@@ -248,6 +292,7 @@ const Analysis: React.FC = () => {
     };
 
     startAnalysis();
+    pollStatus();
     statusTimer = window.setInterval(pollStatus, 2000);
 
     return () => {
@@ -264,20 +309,39 @@ const Analysis: React.FC = () => {
     };
   }, [runName, applyProgress]);
 
+  useEffect(() => {
+    if (!isCompleted) {
+      setSelectedStepIndex(currentStepIndex);
+      return;
+    }
+    if (orderedDetails.length === 0) {
+      setSelectedStepIndex(null);
+      return;
+    }
+    setSelectedStepIndex((prev) => {
+      if (prev === null) return orderedDetails.length - 1;
+      return Math.min(prev, orderedDetails.length - 1);
+    });
+  }, [isCompleted, orderedDetails.length, currentStepIndex]);
+
   const stats = useMemo(() => {
     const scoredItems = orderedDetails.filter((d) => typeof d.score === "number") as Array<RunDetail & { score: number }>;
     const totalScore = scoredItems.reduce((sum, d) => sum + d.score, 0);
     const overallScore = scoredItems.length > 0 ? totalScore / scoredItems.length : null;
-    const completed = orderedDetails.filter((d) => d.status === "COMPLETED").length;
+    const totalCases = analysisTotal > 0 ? analysisTotal : orderedDetails.length;
+    const completed = Math.max(0, Math.min(analysisCurrent, totalCases));
 
     return {
-      totalCases: orderedDetails.length,
+      totalCases,
       completedCases: completed,
       overallScore,
     };
-  }, [orderedDetails]);
+  }, [orderedDetails, analysisCurrent, analysisTotal]);
 
-  const currentStep = orderedDetails[currentStepIndex] ?? null;
+  const displayedStepIndex = isCompleted
+    ? selectedStepIndex ?? Math.max(orderedDetails.length - 1, 0)
+    : currentStepIndex;
+  const currentStep = orderedDetails[displayedStepIndex] ?? null;
   const progressPercent = orderedDetails.length > 0
     ? Math.round(((Math.min(currentStepIndex + 1, orderedDetails.length)) / orderedDetails.length) * 100)
     : 0;
@@ -293,18 +357,6 @@ const Analysis: React.FC = () => {
         {isAnalysing && <p>Analysis is running. Live execution loop is updating...</p>}
         {isCompleted && <p className={styles.success}>Completed successfully.</p>}
       </div>
-
-      {isCompleted && (
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.routeButton}
-            onClick={() => navigate(`/test-runs/${encodeURIComponent(summary.run_name)}`)}
-          >
-            Go to /test-runs/{summary.run_name}
-          </button>
-        </div>
-      )}
 
       <section className={styles.cardGrid}>
         <div className={styles.card}>
@@ -334,7 +386,7 @@ const Analysis: React.FC = () => {
         <div className={styles.executionHeaderRow}>
           <h3>Execution Loop</h3>
           {orderedDetails.length > 0 && (
-            <span className={styles.executionCount}>Step {Math.min(currentStepIndex + 1, orderedDetails.length)} / {orderedDetails.length}</span>
+            <span className={styles.executionCount}>Step {Math.min(displayedStepIndex + 1, orderedDetails.length)} / {orderedDetails.length}</span>
           )}
         </div>
 
@@ -346,16 +398,20 @@ const Analysis: React.FC = () => {
 
             <div className={styles.currentStepCard}>
               <div className={styles.stepLabel}>Current Strategy</div>
-              <div className={styles.stepValue}>{liveProgress?.strategyName || currentStep.strategy_name || "Strategy"}</div>
+              <div className={styles.stepValue}>
+                {isCompleted
+                  ? currentStep.strategy_name || "Strategy"
+                  : liveProgress?.strategyName || currentStep.strategy_name || "Strategy"}
+              </div>
 
               <div className={styles.stepMetaGrid}>
                 <div>
                   <span className={styles.metaLabel}>Metric</span>
-                  <span className={styles.metaValue}>{liveProgress?.metricName || currentStep.metric_name}</span>
+                  <span className={styles.metaValue}>{isCompleted ? currentStep.metric_name : liveProgress?.metricName || currentStep.metric_name}</span>
                 </div>
                 <div>
                   <span className={styles.metaLabel}>Test Case</span>
-                  <span className={styles.metaValue}>{liveProgress?.testcaseName || currentStep.testcase_name}</span>
+                  <span className={styles.metaValue}>{isCompleted ? currentStep.testcase_name : liveProgress?.testcaseName || currentStep.testcase_name}</span>
                 </div>
                 <div>
                   <span className={styles.metaLabel}>Status</span>
@@ -364,7 +420,7 @@ const Analysis: React.FC = () => {
                 <div>
                   <span className={styles.metaLabel}>Score</span>
                   <span className={styles.metaValue}>
-                    {typeof liveProgress?.score === "number"
+                    {typeof liveProgress?.score === "number" && !isCompleted
                       ? liveProgress.score.toFixed(2)
                       : typeof currentStep.score === "number"
                         ? currentStep.score.toFixed(2)
@@ -376,18 +432,31 @@ const Analysis: React.FC = () => {
 
             <div className={styles.stepRail}>
               {orderedDetails.map((item, index) => {
-                const stateClass = index < currentStepIndex
-                  ? styles.stepDone
-                  : index === currentStepIndex
-                    ? styles.stepActive
-                    : styles.stepPending;
+                const stateClass = isCompleted
+                  ? index === displayedStepIndex
+                    ? styles.stepSelected
+                    : styles.stepDone
+                  : index < currentStepIndex
+                    ? styles.stepDone
+                    : index === currentStepIndex
+                      ? styles.stepActive
+                      : styles.stepPending;
 
                 return (
-                  <div key={item.detail_id} className={`${styles.stepChip} ${stateClass}`}>
+                  <button
+                    key={item.detail_id}
+                    type="button"
+                    className={`${styles.stepChip} ${stateClass} ${isCompleted ? styles.stepChipClickable : ""}`}
+                    onClick={() => {
+                      if (isCompleted) {
+                        setSelectedStepIndex(index);
+                      }
+                    }}
+                  >
                     <span className={styles.chipStrategy}>{item.strategy_name || "Strategy"}</span>
                     <span className={styles.chipMetric}>{item.metric_name}</span>
                     <span className={styles.chipCase}>{item.testcase_name}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -396,6 +465,18 @@ const Analysis: React.FC = () => {
           <div className={styles.empty}>No analysed test case records found.</div>
         )}
       </section>
+
+      {isCompleted && (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.routeButton}
+            onClick={() => navigate(`/test-runs/${encodeURIComponent(summary.run_name)}`)}
+          >
+            Go to /test-runs/{summary.run_name}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

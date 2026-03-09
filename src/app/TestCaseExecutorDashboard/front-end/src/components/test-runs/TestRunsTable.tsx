@@ -317,10 +317,20 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                         ? formatDuration(run.duration_ms)
                         : "-"}
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       {typeof run.average_score === "number"
                         ? run.average_score.toFixed(2)
-                        : "-"}
+                        : (
+                          <button
+                            type="button"
+                            className="analyse-link-button"
+                            onClick={() => navigate(`/analyse/${encodeURIComponent(run.run_name)}`)}
+                            title={`Run analysis for ${run.run_name}`}
+                          >
+                            <i className="bi bi-activity"></i>
+                            <span>Null</span>
+                          </button>
+                        )}
                     </td>
                     <td>
                       <span
