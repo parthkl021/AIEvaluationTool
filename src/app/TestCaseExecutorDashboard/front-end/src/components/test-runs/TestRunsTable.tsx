@@ -66,12 +66,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     { key: "run_name", label: "Run Name", filterable: false },
     { key: "target", label: "Target", filterable: true, filterType: "target" },
     { key: "start_ts", label: "Started At", filterable: false, sortable: true, sortKey: "start_ts" },
-    { key: "end_ts", label: "Ended At", filterable: false, sortable: true, sortKey: "end_ts" },
+    // { key: "end_ts", label: "Ended At", filterable: false, sortable: true, sortKey: "end_ts" },
     { key: "duration", label: "Duration", filterable: false },
     { key: "average_score", label: "Average Score", filterable: false },
     { key: "status", label: "Status", filterable: true, filterType: "status" },
     { key: "domain", label: "Domain", filterable: true, filterType: "domain" },
-    { key: "report", label: "Report", filterable: false },
+    { key: "actions", label: "Actions", filterable: false },
   ];
 
   useEffect(() => {
@@ -311,7 +311,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                     <td>{run.run_name}</td>
                     <td>{run.target}</td>
                     <td>{new Date(run.start_ts).toLocaleString()}</td>
-                    <td>{run.end_ts ? new Date(run.end_ts).toLocaleString() : "-"}</td>
+                    {/* <td>{run.end_ts ? new Date(run.end_ts).toLocaleString() : "-"}</td> */}
                     <td>
                       {run.duration_ms != null
                         ? formatDuration(run.duration_ms)
@@ -320,17 +320,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                     <td onClick={(e) => e.stopPropagation()}>
                       {typeof run.average_score === "number"
                         ? run.average_score.toFixed(2)
-                        : (
-                          <button
-                            type="button"
-                            className="analyse-link-button"
-                            onClick={() => navigate(`/analyse/${encodeURIComponent(run.run_name)}`)}
-                            title={`Run analysis for ${run.run_name}`}
-                          >
-                            <i className="bi bi-activity"></i>
-                            <span>Null</span>
-                          </button>
-                        )}
+                        : "-"}
                     </td>
                     <td>
                       <span
@@ -348,21 +338,46 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                       </span>
                     </td>
                     <td>{run.domain}</td>
-                    <td className="report-cell" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="report-button"
-                        onClick={() => {
-                          const link = document.createElement("a");
-                          link.href = API_ENDPOINTS.DOWNLOAD_REPORT(run.run_name);
-                          link.setAttribute("download", `${run.run_name}-evaluation.xlsx`);
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }}
-                      >
-                        <i className="bi bi-file-earmark-text"></i>
-                        <span>Report</span>
-                      </button>
+                    <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                      <div className="actions-group">
+                        <button
+                          type="button"
+                          className="action-icon-button action-continue"
+                          data-tooltip="Continue"
+                          onClick={() => navigate(`/test-runs/${run.run_name}`)}
+                          title="Continue"
+                          aria-label={`Continue ${run.run_name}`}
+                        >
+                          <i className="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="action-icon-button action-analyse"
+                          data-tooltip="Analyse"
+                          onClick={() => navigate(`/analyse/${encodeURIComponent(run.run_name)}`)}
+                          title="Analyse"
+                          aria-label={`Analyse ${run.run_name}`}
+                        >
+                          <i className="bi bi-bar-chart-fill"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="action-icon-button action-report"
+                          data-tooltip="Report"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = API_ENDPOINTS.DOWNLOAD_REPORT(run.run_name);
+                            link.setAttribute("download", `${run.run_name}-evaluation.xlsx`);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          title="Report"
+                          aria-label={`Download report for ${run.run_name}`}
+                        >
+                          <i className="bi bi-clipboard2-check"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

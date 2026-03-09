@@ -214,64 +214,112 @@
   color: #475569;
 }
 
-/* ===== REPORT BUTTON ===== */
-.report-cell {
-  text-align: left;
-}
-
-.report-button {
+/* ===== NO SCORE ===== */
+.no-score-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.report-button:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #334155;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.report-button:active {
-  transform: translateY(0);
-}
-
-.report-button i {
-  font-size: 14px;
-}
-
-.analyse-link-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid #bfdbfe;
+  padding: 4px 12px;
   border-radius: 999px;
-  background: #eff6ff;
+  background: #dbeafe;
   color: #1d4ed8;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+/* ===== ACTIONS ===== */
+.actions-cell {
+  min-width: 140px;
+  position: relative;
+  z-index: 5;
+}
+
+.actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-runs-table .actions-cell:hover {
+  z-index: 20;
+}
+
+.test-runs-table .actions-group .action-icon-button {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 0 !important;
+  background: #e9edf4 !important;
+  color: #334155 !important;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.15s ease;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.25);
+  position: relative;
+  z-index: 21;
 }
 
-.analyse-link-button:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
+.test-runs-table .actions-group .action-icon-button i {
+  font-size: 18px;
+  line-height: 1;
 }
 
-.analyse-link-button i {
+.test-runs-table .actions-group .action-icon-button:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(0.98);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18), inset 0 0 0 1px rgba(100, 116, 139, 0.18);
+}
+
+.test-runs-table .actions-group .action-icon-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.test-runs-table .actions-group .action-continue {
+  background: #b9ece9 !important;
+  color: #0f9f98 !important;
+}
+
+.test-runs-table .actions-group .action-analyse {
+  background: #ccdef8 !important;
+  color: #2f7de9 !important;
+}
+
+.test-runs-table .actions-group .action-report {
+  background: #e6ebf2 !important;
+  color: #475569 !important;
+}
+
+.test-runs-table .actions-group .action-icon-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  transform: translateX(-50%) translateY(-4px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #14355e;
+  color: #ffffff;
   font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  z-index: 9999;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
+}
+
+.test-runs-table .actions-group .action-icon-button:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 .table-loading, .table-empty {
@@ -493,7 +541,8 @@
   .test-runs-table thead th,
   .test-runs-table tbody td { padding: 10px 8px; font-size: 12px; }
   .status-badge { font-size: 11px; padding: 3px 8px; }
-  .report-button { padding: 5px 10px; font-size: 12px; }
+  .test-runs-table .actions-group .action-icon-button { width: 32px; height: 32px; }
+  .test-runs-table .actions-group .action-icon-button i { font-size: 15px; }
   .pagination-container { flex-wrap: wrap; gap: 4px; }
   .pagination-button,
   .pagination-number { width: 32px; height: 32px; min-width: 32px; font-size: 13px; }

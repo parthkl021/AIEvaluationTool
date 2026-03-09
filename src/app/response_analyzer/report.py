@@ -29,6 +29,7 @@ def main():
     parser.add_argument("--get-runs", "-N", dest="get_runs", action="store_true", help="Get all test runs")
     parser.add_argument("--run-name", "-r", dest="run_name", type=str, help="Name of the run to evaluate")
     parser.add_argument("--force", "-f", dest="force", default=False, action="store_true", help="Force evaluation of already evaluated runs")
+    parser.add_argument("--get-report", "-R", dest="get_report", action="store_true", help="Flag to generate PDF report after evaluation")
 
     args = parser.parse_args()
 
@@ -298,6 +299,10 @@ def main():
         for metrics in score_card.values()
         for m in metrics.values()
     )
+
+    if not args.get_report:
+        logger.info("Report generation skipped as per the argument. Use --get-report or -R flag to generate the PDF report.")
+        return
 
     # ------------------------------------------------------------
     # PDF generation
