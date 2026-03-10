@@ -41,6 +41,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ user_name: username, password }),
       });
 

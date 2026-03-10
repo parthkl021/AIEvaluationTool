@@ -6,6 +6,7 @@ from database.database import get_db, init_db, seed_users
 from schemas.auth import LoginRequest, RefreshTokenRequest, LogoutRequest
 from contextlib import asynccontextmanager
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

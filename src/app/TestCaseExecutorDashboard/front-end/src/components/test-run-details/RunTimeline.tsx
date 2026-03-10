@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import styles from "./runtimeline.module.css";
-import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, LOGIN_URL } from "../../config/api";
 
 /* ===== TYPES ===== */
 
@@ -25,12 +25,42 @@ interface Props {
 
 const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric,onDurationCalculated }) => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const loginUrl = LOGIN_URL;
+
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem("access_token");
+    return token
+      ? {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      : {
+          "Content-Type": "application/json",
+        };
+  };
+
+  const redirectToLogin = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+    window.location.replace(loginUrl);
+  };
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.GET_TIMELINE(runName))
-      .then(res => res.json())
+    fetch(API_ENDPOINTS.GET_TIMELINE(runName), {
+      headers: getAuthHeaders(),
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          redirectToLogin();
+          throw new Error("Unauthorized");
+        }
+        return res.json();
+      })
       .then(setEvents);
-  }, [runName]);
+  }, [runName, loginUrl]);
 
   /* ================= CALCULATE TOTAL EXECUTION TIME ================= */
 
