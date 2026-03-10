@@ -18,7 +18,11 @@ interface NavItem {
   externalUrl?: string;
 }
 
-const Sidebar = () => {
+interface SidebarProps {
+  onLogout?: () => void;
+}
+
+const Sidebar = ({ onLogout }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<UserInfo>({ user_name: "UserName", email: "", role: "Admin" });
@@ -34,7 +38,8 @@ const Sidebar = () => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("role");
-    window.location.replace(loginUrl);
+    onLogout?.();
+    navigate("/login");
   };
 
   useEffect(() => {
@@ -42,7 +47,7 @@ const Sidebar = () => {
       try {
         const token = localStorage.getItem("access_token");
         if (!token) {
-          navigate("/");
+          navigate("/login");
           return;
         }
 
@@ -63,7 +68,8 @@ const Sidebar = () => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("role");
-    navigate("/");
+    onLogout?.();
+    navigate("/login");
         } else {
           // Use fallback values from localStorage if API fails
           const storedUsername = localStorage.getItem("user_name");

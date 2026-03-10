@@ -46,7 +46,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
           localStorage.removeItem("refresh_token");
           localStorage.removeItem("user_name");
           localStorage.removeItem("role");
-          window.location.replace(loginUrl);
+          navigate("/login");
           throw new Error("Unauthorized");
         }
         if (!res.ok) {
@@ -62,7 +62,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         console.error("Error fetching filters:", err);
         setIsLoading(false);
       });
-  }, [loginUrl]);
+  }, [loginUrl, navigate]);
 
   const filterConfigs = [
     { type: "domain", label: "Domain", options: filters.domains },

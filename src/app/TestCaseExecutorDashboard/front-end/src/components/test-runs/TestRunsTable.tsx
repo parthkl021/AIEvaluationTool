@@ -75,7 +75,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("role");
-    window.location.replace(loginUrl);
+    navigate("/login");
   };
 
   const headers: HeaderConfig[] = [
