@@ -104,15 +104,24 @@ db = DB(db_url=db_url, debug=False)
 
 app = FastAPI()
 
+app.add_middleware(AuthMiddleware)
+
+raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "")
+cors_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+if not cors_origins:
+    cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:7000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # React
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_middleware(AuthMiddleware)
 
 app.include_router(testruns_router)
 app.include_router(filters_router)

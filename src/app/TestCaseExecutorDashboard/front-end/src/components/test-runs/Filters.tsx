@@ -38,6 +38,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
     setIsLoading(true);
     fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`, {
       headers: getAuthHeaders(),
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {

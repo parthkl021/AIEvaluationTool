@@ -94,6 +94,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     setFiltersLoading(true);
     fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`, {
       headers: getAuthHeaders(),
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {
@@ -163,6 +164,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
 
     fetch(url, {
       headers: getAuthHeaders(),
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {

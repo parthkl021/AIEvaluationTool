@@ -51,6 +51,7 @@ const Sidebar = () => {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          credentials: "include",
         });
 
         if (response.ok) {

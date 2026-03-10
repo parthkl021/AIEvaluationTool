@@ -22,12 +22,16 @@ class AuthMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
 
-        # Check for token in Authorization header
+        # Check for token in Authorization header or cookie
         auth_header = request.headers.get("Authorization")
         token = None
 
         if auth_header and auth_header.startswith("Bearer"):
             token = auth_header[len("Bearer "):]
+
+        if not token:
+            # Support HTTP-only cookie auth
+            token = request.cookies.get("access_token") or request.cookies.get("accessToken")
 
         if not token:
             return JSONResponse({"detail": "Authorization header missing"}, status_code=401)
