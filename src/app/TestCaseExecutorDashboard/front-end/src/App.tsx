@@ -14,21 +14,25 @@ import Sidebar from "./components/common/sidebar/sidebar";
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const loginUrl = process.env.REACT_APP_LOGIN_URL || "http://localhost:8080/login";
+  const loginUrl = process.env.REACT_APP_LOGIN_URL || "http://localhost:7500/login";
 
   useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem('access_token');
-    setIsAuthenticated(!!token);
-    setLoading(false);
+
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  // if (loading) {
+  //   return <div>Loading...</div>;
+  // }
 
   // if (!isAuthenticated) {
-
+  //  return null;
   // }
 
   return (

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./TestRunsTable.css";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { API_BASE_URL, API_ENDPOINTS, LOGIN_URL } from "../../config/api";
 import { AllFilters, FilterOption } from "../../types/Filters";
 
 interface TestRun {
@@ -30,7 +30,7 @@ interface Props {
 
 const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   const navigate = useNavigate();
-  const loginUrl = process.env.REACT_APP_LOGIN_URL || "http://localhost:7500/login";
+  const loginUrl = LOGIN_URL;
   const [runs, setRuns] = useState<TestRun[]>([]);
   const [filteredRuns, setFilteredRuns] = useState<TestRun[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

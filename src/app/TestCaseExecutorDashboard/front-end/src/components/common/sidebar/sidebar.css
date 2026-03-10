@@ -48,6 +48,15 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.sidebar-nav-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
 .sidebar-nav-item-link {
   color: rgba(255, 255, 255, 0.8);
 }

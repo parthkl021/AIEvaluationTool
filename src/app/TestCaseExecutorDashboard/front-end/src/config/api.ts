@@ -1,6 +1,12 @@
 export const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL !;
 
+export const AUTH_SERVICE_URL =
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:7500";
+
+export const LOGIN_URL =
+  process.env.REACT_APP_LOGIN_URL || `${AUTH_SERVICE_URL}/login`;
+
  export const API_ENDPOINTS = {
     GET_ALL_FILTERS: "/get_all_filters",
     GET_ALL_TEST_RUNS: "/get_all_test_runs",

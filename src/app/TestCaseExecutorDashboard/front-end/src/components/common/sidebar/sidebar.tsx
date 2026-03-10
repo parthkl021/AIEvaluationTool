@@ -2,6 +2,7 @@ import { Home, Users, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ceraiLogo from "../../../assets/logo/cerai-logo.png";
+import { LOGIN_URL } from "../../../config/api";
 import "./sidebar.css";
 
 interface UserInfo {
@@ -22,11 +23,19 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<UserInfo>({ user_name: "UserName", email: "", role: "Admin" });
   const [isLoading, setIsLoading] = useState(true);
+  const loginUrl = LOGIN_URL;
   const testDataUrl = process.env.REACT_APP_TEST_DATA_URL || "http://localhost:8080/dashboard";
   const userListUrl = process.env.REACT_APP_USER_LIST_URL || "http://localhost:8080/users";
   const currentUserUrl =
     process.env.REACT_APP_CURRENT_USER_URL ||
     `${process.env.REACT_APP_API_BASE_URL || ""}/api/users/me`;
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+    window.location.replace(loginUrl);
+  };
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -132,17 +141,14 @@ const Sidebar = () => {
             </div>
           </div>
         </div>
-        <Link
-          to="/"
-          onClick={() => {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("user_name");
-          }}
-          className="sidebar-nav-item sidebar-nav-item-link"
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="sidebar-nav-item sidebar-nav-item-link sidebar-nav-button"
         >
           <LogOut className="sidebar-nav-icon" />
           <span>Log out</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

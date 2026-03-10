@@ -4,14 +4,14 @@ import { AllFilters } from "../../types/Filters";
 import { useNavigate } from "react-router-dom";
 import FilterSelect from "../common/Filters/Filters";
 import AppButton from "../common/Button/AppButton";
-import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { API_BASE_URL, API_ENDPOINTS, LOGIN_URL } from "../../config/api";
 interface FiltersProps {
   onFilterChange?: (filterType: string, value: string) => void;
 }
 
 const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
   const navigate = useNavigate();
-  const loginUrl = process.env.REACT_APP_LOGIN_URL || "http://localhost:7500/login";
+  const loginUrl = LOGIN_URL;
   const [filters, setFilters] = useState<AllFilters>({
     domains: [],
     languages: [],
