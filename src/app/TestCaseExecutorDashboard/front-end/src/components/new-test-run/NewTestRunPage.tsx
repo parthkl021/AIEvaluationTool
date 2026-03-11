@@ -36,7 +36,7 @@ const NewTestRunPage: React.FC = () => {
   // const targets = ['Vaidya AI', 'Target 2', 'Target 3'];
   const testPlans = ['Plan 1', 'Plan 2', 'Plan 3'];
   const metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score'];
-  const maxTestCases = ['10', '20', '30', '50', '100'];
+  const maxTestCases = ['20', '30', '50', '100'];
   const domains = ['E-commerce', 'Healthcare', 'Finance', 'Education'];
   const languages = ['Tamil', 'Hindi', 'Assamese', 'Bengali', 'Sindhi', 'Bodo'];
   const [domainOptions, setDomainOptions] = useState<string[]>([]);
@@ -213,7 +213,7 @@ const handleChange = (key: string, value: any) => {
             <CustomSelect
               options={planMetrics}
               defaultText={
-                formData.testPlan ? "Select Metric" : "Select Test Plan first"
+                formData.testPlan ? "All Metrics" : "Select Test Plan first"
               }
               
               disabled={!formData.testPlan}
@@ -224,7 +224,7 @@ const handleChange = (key: string, value: any) => {
             <label>Test Case ID</label>
             <input
               type="text"
-              placeholder="Enter Test Plan ID"
+              placeholder="Enter Test Case ID"
               value={formData.testCaseId?? ""}
               disabled={!formData.testPlan}
               onChange={(e) =>
@@ -241,7 +241,7 @@ const handleChange = (key: string, value: any) => {
             <label>Max test cases</label>
             <CustomSelect
               options={maxTestCases}
-              defaultText="Select Max"
+              defaultText="10"
               onChange={(val) => handleChange("maxTestCases", val)}
             />
           </div>
@@ -252,7 +252,7 @@ const handleChange = (key: string, value: any) => {
               options={isTargetSelected ? domainOptions : []}
               defaultText={
                 isTargetSelected
-                  ? "Select Domain"
+                  ? "All Domains"
                   : "Please select target first"
               }
               onChange={(val) => handleChange("domain", val)}
@@ -266,7 +266,7 @@ const handleChange = (key: string, value: any) => {
               options={isTargetSelected ? languageOptions : []}
               defaultText={
                 isTargetSelected
-                  ? "Select Language"
+                  ? "All Languages"
                   : "Please select target first"
               }
               onChange={(val) => handleChange("language", val)}

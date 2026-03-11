@@ -344,7 +344,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           type="button"
                           className="action-icon-button action-continue"
                           data-tooltip="Continue"
-                          onClick={() => navigate(`/test-runs/${run.run_name}`)}
+                          onClick={() => navigate(`/continue-run/${run.run_name}`)}
                           title="Continue"
                           aria-label={`Continue ${run.run_name}`}
                         >

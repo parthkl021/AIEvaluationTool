@@ -46,18 +46,40 @@ const RunDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedDetailId, setSelectedDetailId] = useState<number | null>(null);
   const [hoveredMetric, setHoveredMetric] = useState<string | null>(null);
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
   const [executionDuration, setExecutionDuration] = useState<string | null>(null);
   const [filtersData, setFiltersData] = useState<AllFilters>({ metrics: [], statuses: [] });
   const [openFilterColumn, setOpenFilterColumn] = useState<string | null>(null);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
+  const summaryCardRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const filterRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const navigate = useNavigate();
 
   const [activeFilters, setActiveFilters] = useState<{ metric?: string; status?: string }>({});
 
-  const statusMap = (status: string | null | undefined): "COMPLETED" | "RUNNING" | "FAILED" | undefined => {
+  // Measure left card height via ResizeObserver — table matches this exactly
+  useEffect(() => {
+    const measure = () => {
+      if (summaryCardRef.current) {
+        setCardHeight(summaryCardRef.current.offsetHeight);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (summaryCardRef.current) ro.observe(summaryCardRef.current);
+    return () => ro.disconnect();
+  }, [summary, executionDuration]);
+
+  const statusMap = (
+    status: string | null | undefined
+  ): "COMPLETED" | "RUNNING" | "FAILED" | undefined => {
     if (status === "COMPLETED" || status === "RUNNING" || status === "FAILED") return status;
     return undefined;
   };
@@ -74,7 +96,6 @@ const RunDetails: React.FC = () => {
     setOpenFilterColumn(null);
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (openFilterColumn && filterRefs.current[openFilterColumn]) {
@@ -95,9 +116,73 @@ const RunDetails: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  /* ======================
-     FETCH RUN DETAILS
-  ====================== */
+  useEffect(() => {
+    const updateScrollHint = () => {
+      const node = tableScrollRef.current;
+      if (!node) {
+        setShowScrollHint(false);
+        setIsAtBottom(false);
+        return;
+      }
+      setShowScrollHint(node.scrollHeight > node.clientHeight + 2);
+      const maxScrollTop = node.scrollHeight - node.clientHeight;
+      setIsAtBottom(node.scrollTop >= maxScrollTop - 2);
+    };
+    updateScrollHint();
+    window.addEventListener("resize", updateScrollHint);
+    return () => window.removeEventListener("resize", updateScrollHint);
+  }, [details, cardHeight]);
+
+  useEffect(() => {
+    const node = tableScrollRef.current;
+    if (!node) return;
+    const onScroll = () => {
+      const maxScrollTop = node.scrollHeight - node.clientHeight;
+      setIsAtBottom(node.scrollTop >= maxScrollTop - 2);
+    };
+    node.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => node.removeEventListener("scroll", onScroll);
+  }, [details]);
+
+  useEffect(() => {
+    const clearSelectionIfConversationModal = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.id !== "conversationModal") return;
+      setSelectedConversationId(null);
+      setSelectedDetailId(null);
+    };
+
+    // Use document-level listener so it still works even if Bootstrap replaces/rehydrates modal DOM.
+    document.addEventListener(
+      "hide.bs.modal",
+      clearSelectionIfConversationModal as EventListener
+    );
+    document.addEventListener(
+      "hidden.bs.modal",
+      clearSelectionIfConversationModal as EventListener
+    );
+    return () => {
+      document.removeEventListener(
+        "hide.bs.modal",
+        clearSelectionIfConversationModal as EventListener
+      );
+      document.removeEventListener(
+        "hidden.bs.modal",
+        clearSelectionIfConversationModal as EventListener
+      );
+    };
+  }, []);
+
+  const handleScrollChevronClick = () => {
+    const node = tableScrollRef.current;
+    if (!node) return;
+    if (isAtBottom) {
+      node.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     if (!runName) return;
@@ -131,38 +216,72 @@ const RunDetails: React.FC = () => {
     return acc;
   }, {} as Record<string, RunDetail[]>);
 
+  const tableContainerHeight = cardHeight ?? undefined;
+
   return (
     <div className={styles.container}>
-      <h3 className={styles.header}>Test Run Details - <span>{summary.run_name}</span></h3>
-      <RunTimeline 
-          runName={summary.run_name} 
-          hoveredMetric={hoveredMetric}
-          hoveredPlan={hoveredPlan}
-          onHoverPlan={setHoveredPlan}
-          onHoverMetric={setHoveredMetric} 
-          onDurationCalculated={setExecutionDuration}
+      <RunTimeline
+        runName={summary.run_name}
+        hoveredMetric={hoveredMetric}
+        hoveredPlan={hoveredPlan}
+        onHoverPlan={setHoveredPlan}
+        onHoverMetric={setHoveredMetric}
+        onDurationCalculated={setExecutionDuration}
       />
-      {/* Header Section */}
 
       <div className={styles.flex}>
-        <div className={styles.summaryCard}>
-          
-          <div>
+        {/* ── LEFT CARD — natural height, drives table height ── */}
+        <div className={styles.summaryCard} ref={summaryCardRef}>
+          <div className={styles.summaryContent}>
             <DetailCard label="Target" value={summary.target ?? "-"} icon="bi-bullseye" />
             <DetailCard label="Domain" value={summary.domain ?? "-"} icon="bi-globe" />
-            <DetailCard label="Status" value={summary.status} status={statusMap(summary.status)} icon="bi-activity" />
-            <DetailCard label="Started At" value={new Date(summary.start_ts).toLocaleString()} icon="bi-calendar-event" />
-            <DetailCard label="Ended At" value={summary.end_ts ? new Date(summary.end_ts).toLocaleString() : "-"} icon="bi-calendar-check" />
-            <DetailCard label="Duration" value={executionDuration ?? "-"} icon="bi-clock" />
+            <DetailCard
+              label="Status"
+              value={summary.status}
+              status={statusMap(summary.status)}
+              icon="bi-activity"
+            />
+            <DetailCard
+              label="Started At"
+              value={new Date(summary.start_ts).toLocaleString()}
+              icon="bi-calendar-event"
+            />
+            <DetailCard
+              label="Ended At"
+              value={summary.end_ts ? new Date(summary.end_ts).toLocaleString() : "-"}
+              icon="bi-calendar-check"
+            />
+            <DetailCard
+              label="Duration"
+              value={executionDuration ?? "-"}
+              icon="bi-clock"
+            />
+            {/* Continue button — inside card, pinned to bottom */}
+            <div className={styles.actionsRow}>
+              <AppButton
+                label="Continue"
+                variant="outline-secondary"
+                icon="bi-play-fill"
+                size="md"
+                className="new-test-run-btn"
+                onClick={() => navigate(`/continue-run/${runName}`)}
+              />
+            </div>
           </div>
         </div>
 
+        {/* ── RIGHT TABLE — height locked to left card height ── */}
         <div className={styles.tableLayout}>
-
-          {/* Table */}
           <section className={styles.tableSection}>
-            <div className={styles.tableContainer}>
-              <div className={`${styles.tableScroll} table-responsive`}>
+            <div
+              className={`${styles.tableContainer}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
+              style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
+            >
+              <div
+                ref={tableScrollRef}
+                className={`${styles.tableScroll} table-responsive`}
+                style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
+              >
                 <table className={styles.resultsTable}>
                   <thead>
                     <tr>
@@ -173,10 +292,15 @@ const RunDetails: React.FC = () => {
                       <th>
                         <div className="header-content">
                           <span>Metric</span>
-                          <div className="filter-wrapper" ref={(el) => { filterRefs.current["metric"] = el; }}>
+                          <div
+                            className="filter-wrapper"
+                            ref={(el) => { filterRefs.current["metric"] = el; }}
+                          >
                             <button
                               className="filter-trigger"
-                              onClick={() => setOpenFilterColumn(openFilterColumn === "metric" ? null : "metric")}
+                              onClick={() =>
+                                setOpenFilterColumn(openFilterColumn === "metric" ? null : "metric")
+                              }
                             >
                               <i className={`bi bi-funnel${activeFilters.metric ? "-fill" : ""}`}></i>
                             </button>
@@ -190,12 +314,16 @@ const RunDetails: React.FC = () => {
                                   >
                                     <option value="">All Metrics</option>
                                     {filtersData.metrics.map((opt) => (
-                                      <option key={opt.filter_name} value={opt.filter_name}>{opt.filter_name}</option>
+                                      <option key={opt.filter_name} value={opt.filter_name}>
+                                        {opt.filter_name}
+                                      </option>
                                     ))}
                                   </select>
                                   {activeFilters.metric && (
-                                    <button className="btn btn-sm btn-outline-secondary mt-2 w-100"
-                                      onClick={() => handleFilterChange("metric", "")}>
+                                    <button
+                                      className="btn btn-sm btn-outline-secondary mt-2 w-100"
+                                      onClick={() => handleFilterChange("metric", "")}
+                                    >
                                       Clear Filter
                                     </button>
                                   )}
@@ -212,10 +340,15 @@ const RunDetails: React.FC = () => {
                       <th>
                         <div className="header-content">
                           <span>Status</span>
-                          <div className="filter-wrapper" ref={(el) => { filterRefs.current["status"] = el; }}>
+                          <div
+                            className="filter-wrapper"
+                            ref={(el) => { filterRefs.current["status"] = el; }}
+                          >
                             <button
                               className="filter-trigger"
-                              onClick={() => setOpenFilterColumn(openFilterColumn === "status" ? null : "status")}
+                              onClick={() =>
+                                setOpenFilterColumn(openFilterColumn === "status" ? null : "status")
+                              }
                             >
                               <i className={`bi bi-funnel${activeFilters.status ? "-fill" : ""}`}></i>
                             </button>
@@ -229,12 +362,16 @@ const RunDetails: React.FC = () => {
                                   >
                                     <option value="">All Statuses</option>
                                     {filtersData.statuses.map((opt) => (
-                                      <option key={opt.filter_name} value={opt.filter_name}>{opt.filter_name}</option>
+                                      <option key={opt.filter_name} value={opt.filter_name}>
+                                        {opt.filter_name}
+                                      </option>
                                     ))}
                                   </select>
                                   {activeFilters.status && (
-                                    <button className="btn btn-sm btn-outline-secondary mt-2 w-100"
-                                      onClick={() => handleFilterChange("status", "")}>
+                                    <button
+                                      className="btn btn-sm btn-outline-secondary mt-2 w-100"
+                                      onClick={() => handleFilterChange("status", "")}
+                                    >
                                       Clear Filter
                                     </button>
                                   )}
@@ -249,7 +386,9 @@ const RunDetails: React.FC = () => {
                   <tbody>
                     {details.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className={styles.emptyState}>No test case details found</td>
+                        <td colSpan={5} className={styles.emptyState}>
+                          No test case details found
+                        </td>
                       </tr>
                     ) : (
                       Object.entries(groupedByPlan).flatMap(([planName, planDetails]) =>
@@ -268,15 +407,32 @@ const RunDetails: React.FC = () => {
                             <tr
                               key={d.detail_id}
                               role="button"
-                              className={`${styles.tableRow} ${hoveredMetric === d.metric_name ? styles.metricRowHover : ""}`}
+                              tabIndex={0}
+                              aria-pressed={selectedDetailId === d.detail_id}
+                              className={`${styles.tableRow} ${
+                                hoveredMetric === d.metric_name ? styles.metricRowHover : ""
+                              } ${selectedDetailId === d.detail_id ? styles.selectedRow : ""}`}
                               data-bs-toggle="modal"
                               data-bs-target="#conversationModal"
-                              onClick={() => setSelectedConversationId(Number(d.conversation_id))}
+                              onClick={() => {
+                                setSelectedConversationId(Number(d.conversation_id));
+                                setSelectedDetailId(d.detail_id);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setSelectedConversationId(Number(d.conversation_id));
+                                  setSelectedDetailId(d.detail_id);
+                                }
+                              }}
                               onMouseEnter={() => setHoveredMetric(d.metric_name)}
                               onMouseLeave={() => setHoveredMetric(null)}
                             >
                               {index === 0 && (
-                                <td rowSpan={planDetails.length} className={`${styles.planCell} align-middle text-center`}>
+                                <td
+                                  rowSpan={planDetails.length}
+                                  className={`${styles.planCell} align-middle text-center`}
+                                >
                                   {planName}
                                 </td>
                               )}
@@ -284,7 +440,9 @@ const RunDetails: React.FC = () => {
                               <td>{d.metric_name}</td>
                               <td>{d.score ?? "-"}</td>
                               <td>
-                                <span className={`${styles.statusCell} ${statusClass}`}>{normalizedStatus}</span>
+                                <span className={`${styles.statusCell} ${statusClass}`}>
+                                  {normalizedStatus}
+                                </span>
                               </td>
                             </tr>
                           );
@@ -295,18 +453,33 @@ const RunDetails: React.FC = () => {
                 </table>
               </div>
             </div>
-          </section>
-            <div className={styles.actionsRow}>
-              <AppButton
-                label="Continue"
-                variant="outline-secondary"
-                icon="bi-play-fill"
-                size="md"
-                className="new-test-run-btn"
-                onClick={() => navigate(`/continue-run/${runName}`)}
-              />
-            </div>
 
+            {/* Single chevron below the table */}
+            {showScrollHint && (
+              <div className={styles.scrollChevronRow}>
+                <button
+                  type="button"
+                  className={`${styles.scrollChevron}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
+                  onClick={handleScrollChevronClick}
+                  aria-label={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
+                  title={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
+                >
+                  <span className={styles.scrollChevronIcons} aria-hidden="true">
+                    <i
+                      className={`bi ${
+                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
+                      } ${styles.scrollChevronIcon}`}
+                    />
+                    <i
+                      className={`bi ${
+                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
+                      } ${styles.scrollChevronIcon} ${styles.scrollChevronIcon2}`}
+                    />
+                  </span>
+                </button>
+              </div>
+            )}
+          </section>
         </div>
       </div>
 

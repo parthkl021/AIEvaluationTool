@@ -2,23 +2,24 @@
    CONTAINER
 ====================== */
 .container {
-  margin-top: 3rem;
+  margin-top: 0rem;
   padding: 0 80px;
   background-color: #f0f0fa;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - 0px);
   width: 100%;
   box-sizing: border-box;
 }
 
 .flex {
   display: flex;
-  align-items: top;
+  align-items: flex-start; /* left card stays natural height — does NOT stretch */
   justify-content: space-between;
   gap: 16px;
+  margin-top: 100px;
 }
 
 /* ======================
-   SUMMARY CARD
+   SUMMARY CARD — natural height only
 ====================== */
 .summaryCard {
   background-color: white;
@@ -28,16 +29,19 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   width: 300px;
-  height: auto;
   box-sizing: border-box;
-  position: static;
-  top: auto;
-  align-self: flex-start;
-  overflow: hidden;
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.header{
+.summaryContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -159,9 +163,9 @@
   margin: 30px 0 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px; /* Increased gap for better breathing room */
+  gap: 16px;
   align-items: center;
-  justify-content: space-between
+  justify-content: space-between;
 }
 
 .filtersCard {
@@ -175,16 +179,6 @@
   display: flex;
   align-items: center;
 }
-
-/* .filtersTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #4b5563;
-  margin: 0 0 0.9rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-} */
 
 /* ======================
    METRIC ROW HOVER (Timeline Triggered)
@@ -281,7 +275,7 @@
 }
 
 /* ======================
-   TABLE STYLING
+   TABLE LAYOUT
 ====================== */
 .contentWrapper {
   max-width: 1600px;
@@ -293,38 +287,142 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex: 1 1 auto;
 }
 
+/* Continue button — always at the bottom of the card */
 .actionsRow {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   width: 100%;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .tableContainer {
-  overflow-x: auto;
   background-color: #ffffff;
   padding: 0;
   margin: 0;
-  flex: 1;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
   border: 1px solid #e2e8f0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── BOTTOM white fade — hides last row peek, shown when NOT at bottom ── */
+.tableContainer::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent 0%, #ffffff 75%);
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Hide bottom fade when fully scrolled to bottom */
+.tableContainer.atBottom::after {
+  opacity: 0;
+}
+
+/* ── TOP white fade — shown when scrolled down (atBottom), sits below sticky thead ── */
+.tableContainer::before {
+  
+}
+
+/* Show top fade when at bottom so scroll-up chevron has a clean background */
+.tableContainer.atBottom::before {
+  opacity: 1;
 }
 
 .tableScroll {
-  max-height: 578px;
+  flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: auto;
+  /* no max-height — height driven by inline style from JS */
+}
+
+/* ======================
+   SCROLL CHEVRON — double arrows, non-floating, slide animation
+====================== */
+@keyframes chevronSlideDown {
+  0%   { transform: translateY(-6px); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+
+@keyframes chevronSlideUp {
+  0%   { transform: translateY(6px); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateY(-10px); opacity: 0; }
+}
+
+.scrollChevronRow {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+.scrollChevron {
+  position: relative;
+  z-index: 1;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.scrollChevron.atBottom {
+  color: #64748b;
+}
+
+.scrollChevron:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.scrollChevronIcons {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  gap: 2px;
+}
+
+.scrollChevronIcon {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
+  animation: chevronSlideDown 1.4s ease-in-out infinite;
+}
+
+.scrollChevron.atBottom .scrollChevronIcon {
+  animation-name: chevronSlideUp;
+}
+
+.scrollChevronIcon2 {
+  animation-delay: 0.22s;
 }
 
 .tableLayout {
   flex: 1 1 auto;
   min-width: 0;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
 .resultsTable {
@@ -382,6 +480,21 @@
 
 .metricRowHover td {
   background-color: #f1f4f7 !important;
+}
+
+.selectedRow td {
+  background-color: rgba(59, 130, 246, 0.14) !important;
+  border-top: 1px solid rgba(59, 130, 246, 0.9) !important;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.9) !important;
+  font-weight: 600;
+}
+
+.selectedRow td:first-child {
+  border-left: 4px solid rgba(59, 130, 246, 0.95) !important;
+}
+
+.selectedRow td:last-child {
+  border-right: 1px solid rgba(59, 130, 246, 0.9) !important;
 }
 
 .planCell {
@@ -482,11 +595,9 @@
   .container {
     padding: 1.5rem;
   }
-  
   .summaryCard {
     padding: 1.25rem;
   }
-  
   .detailsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -496,25 +607,20 @@
   .detailsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
   .contentWrapper {
     padding: 0 16px;
   }
-  
   .summaryCard {
     padding: 1.25rem;
   }
-  
   .resultsTable thead th {
     padding: 12px 8px;
     font-size: 12px;
   }
-  
   .resultsTable tbody td {
     padding: 12px 8px;
     font-size: 14px;
   }
-  
   .statusCell {
     font-size: 12px;
     padding: 6px 10px;
@@ -525,37 +631,30 @@
   .container {
     padding: 1rem;
   }
-  
   .headerRow {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
   .title {
     font-size: 1.5rem;
     width: 100%;
   }
-  
   .detailsGrid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
   .tableContainer {
     border-radius: 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  
   .resultsTable {
     min-width: 600px;
   }
-  
   .filtersCard :global(.filter) {
     min-width: 160px;
   }
-
   .summaryCard {
     position: static;
     top: auto;
@@ -566,32 +665,26 @@
   .container {
     padding: 0.75rem;
   }
-  
   .summaryCard,
   .filtersCard {
     padding: 0;
     margin: 1rem 0;
   }
-  
   .title {
     font-size: 1.35rem;
   }
-  
   .planBadge {
     font-size: 0.875rem;
     padding: 0.35rem 0.75rem;
   }
-  
   .resultsTable th,
   .resultsTable td {
     padding: 12px 12px;
     font-size: 14px;
   }
-  
   .detailCard {
     padding: 10px;
   }
-  
   .detailValue {
     font-size: 16px;
   }

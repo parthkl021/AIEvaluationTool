@@ -109,6 +109,7 @@ async def run_analyse_background_service(run_name: str, db):
                 status_code=404,
                 detail=f"Run with name '{run_name}' not found."
             )
+        
         run_details = db.get_all_run_details_by_run_name(run_name=run.run_name)
         if not run_details:
             print(f"No run details found for run '{run_name}'.")
@@ -116,7 +117,7 @@ async def run_analyse_background_service(run_name: str, db):
                 status_code=404,
                 detail=f"No run details found for run '{run_name}'."
             )
-        
+        ## step 1        
         # Group all run details by strategy + metric.
         grouped_run_details = {}
         for detail in run_details:  
@@ -131,7 +132,7 @@ async def run_analyse_background_service(run_name: str, db):
             grouped_run_details[group_key].append(detail)
         
         total_items = sum(len(group) for group in grouped_run_details.values())
-        
+        ## step 2
         _set_analysis_job(run_name, total=total_items)
 
         strategy = StrategyImplementor()
@@ -178,8 +179,9 @@ async def run_analyse_background_service(run_name: str, db):
                         status_code=404,
                         detail=f"Agent response not found for conversation ID '{detail.conversation_id}' in run '{run.run_name}'."
                     )
-
+                ## models fetching    
                 score, reason = strategy.execute(testcase = testcase, conversation = conversation)
+                
                 conversation.evaluation_score = score
                 conversation.evaluation_reason = reason
                 conversation.evaluation_ts = datetime.now().isoformat()   

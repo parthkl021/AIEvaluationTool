@@ -34,6 +34,7 @@ from lib.interface_manager import InterfaceManagerClient  # Import the Interface
 from apis.testruns import router as testruns_router
 from apis.filters import router as filters_router
 from apis.analyse import router as analyse_router
+from utils.port import check_service, ensure_interface_manager_port_running
 
 # db_url = (
 #             f"mysql+mysqlconnector://"
@@ -125,52 +126,52 @@ def load_config():
 
 ## to check if interface_manager is running ##
 
-def ensure_interface_manager_running(
-    config_path: str,
-    timeout: float = 1.5
-):
-    # 1️⃣ Read config.json
-    try:
-        with open(config_path, "r") as f:
-            config = json.load(f)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to read Interface Manager config: {str(e)}"
-        )
+# def ensure_interface_manager_running(
+#     config_path: str,
+#     timeout: float = 1.5
+# ):
+#     # 1️⃣ Read config.json
+#     try:
+#         with open(config_path, "r") as f:
+#             config = json.load(f)
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Failed to read Interface Manager config: {str(e)}"
+#         )
 
-    # 2️⃣ Extract base_url
-    base_url = config.get("base_url")
-    if not base_url:
-        raise HTTPException(
-            status_code=500,
-            detail="base_url missing in Interface Manager config"
-        )
+#     # 2️⃣ Extract base_url
+#     base_url = config.get("base_url")
+#     if not base_url:
+#         raise HTTPException(
+#             status_code=500,
+#             detail="base_url missing in Interface Manager config"
+#         )
 
-    # 3️⃣ Parse host & port
-    parsed = urlparse(base_url)
-    host = parsed.hostname
-    port = parsed.port
+#     # 3️⃣ Parse host & port
+#     parsed = urlparse(base_url)
+#     host = parsed.hostname
+#     port = parsed.port
 
-    if not host or not port:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Invalid base_url in Interface Manager config: {base_url}"
-        )
+#     if not host or not port:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Invalid base_url in Interface Manager config: {base_url}"
+#         )
 
-    # 4️⃣ TCP port check
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
+#     # 4️⃣ TCP port check
+#     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sock.settimeout(timeout)
 
-    try:
-        result = sock.connect_ex((host, port))
-        if result != 0:
-            raise HTTPException(
-                status_code=503,
-                detail=f"Interface Manager is not running at {host}:{port}"
-            )
-    finally:
-        sock.close()
+#     try:
+#         result = sock.connect_ex((host, port))
+#         if result != 0:
+#             raise HTTPException(
+#                 status_code=503,
+#                 detail=f"Interface Manager is not running at {host}:{port}"
+#             )
+#     finally:
+#         sock.close()
 
 ## WebSocket for real-time updates
 
@@ -519,17 +520,17 @@ def get_test_run_timeline(run_name: str):
     
     return timeline
 
-@app.get("/get_metrics_by_plan/{plan_name}", response_model=list[FilterResponse])
-def get_metrics_by_plan(plan_name: str):
-    try:
-        metrics = db.get_metrics_by_testplan(plan_name)
-        return [FilterResponse(filter_name=m) for m in metrics]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.get("/get_metrics_by_plan/{plan_name}", response_model=list[FilterResponse])
+# def get_metrics_by_plan(plan_name: str):
+#     try:
+#         metrics = db.get_metrics_by_testplan(plan_name)
+#         return [FilterResponse(filter_name=m) for m in metrics]
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/start-run")
 def start_run(data: NewTestRun, background_tasks: BackgroundTasks):
-    ensure_interface_manager_running(interface_manager_config)
+    ensure_interface_manager_port_running(interface_manager_config)  
     if data.testPlan:
         ### Initialising the form variables
         print("Starting new test run...")
@@ -749,7 +750,7 @@ def continue_run(data: ContinueRunRequest):
 
 @app.post("/continue-run-with-plan")
 def continue_run_with_plan(data: NewTestRun, background_tasks: BackgroundTasks):
-    ensure_interface_manager_running(interface_manager_config)
+    ensure_interface_manager_port_running(interface_manager_config)
     run = db.get_run_by_name(data.runName)
 
     if not run:
@@ -999,13 +1000,7 @@ async def execute_testcases(
         if client is not None:
             client.close()
 
-@app.get("/get_metrics_by_plan/{plan_name}", response_model=list[FilterResponse])
-def get_metrics_by_plan(plan_name: str):
-    try:
-        metrics = db.get_metrics_by_testplan(plan_name)
-        return [FilterResponse(filter_name=m) for m in metrics]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/targets/{target_name}/metadata")
 def get_target_metadata(target_name: str):

@@ -31,17 +31,33 @@
 }
 
 /* Status colors */
-.status-completed {
-  color: #28a745; /* green */
+.status-completed,
+.status-running,
+.status-failed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  min-width: 92px;
+  width: fit-content;
+}
+
+.status-completed {
+  background-color: #d1fae5;
+  color: #065f46;
 }
 
 .status-running {
-  color: #0d6efd; /* blue */
-  font-weight: 600;
+  background-color: #dbeafe;
+  color: #1e40af;
 }
 
 .status-failed {
-  color: #dc3545; /* red */
-  font-weight: 600;
+  background-color: #fee2e2;
+  color: #991b1b;
 }
