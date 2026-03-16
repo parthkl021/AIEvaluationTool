@@ -28,12 +28,11 @@ app = FastAPI(
 
 raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "")
 cors_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+allow_origin_regex = None
 if not cors_origins:
-    cors_origins = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:7000",
-    ]
+    cors_origins = ["*"]
+    # Allow any localhost/127.0.0.1 port in dev (covers Vite/CRA port changes)
+    # allow_origin_regex = r"^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"
 
 app.add_middleware(
     CORSMiddleware,

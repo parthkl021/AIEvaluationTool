@@ -3,8 +3,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #5252c2;
-  color: rgba(255, 255, 255, 0.92);
+  background: #5151c2;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .sidebar-brand-wrap {
@@ -67,7 +67,7 @@
 
 .sidebar-nav-item-active {
   background: #ffffff;
-  color: #5252c2;
+  color: #5151c2;
   font-weight: 600;
 }
 
@@ -113,7 +113,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .sidebar-user-role {
