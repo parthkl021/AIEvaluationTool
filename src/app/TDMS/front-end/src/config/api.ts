@@ -5,6 +5,9 @@ export const API_BASE_URL =
 export const AUTH_SERVICE_URL =
   import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500";
 
+// Auth endpoints
+export const AUTH_PAGE_URL = `${AUTH_SERVICE_URL}/web/login`;
+
 // API endpoints
 export const API_ENDPOINTS = {
   LOGIN: `${AUTH_SERVICE_URL}/login`,

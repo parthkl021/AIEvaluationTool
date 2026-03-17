@@ -5,9 +5,11 @@ from utils.auth import hash_password, verify_password, create_access_token, crea
 # get_user_by_username,
 from fastapi import HTTPException, status
 from typing import Dict
+import logging
 
 # In-memory storage for refresh tokens (in production, use Redis or database)
 refresh_token_store: Dict[str, str] = {}
+logger = logging.getLogger(__name__)
 
 
 def _normalize_role(role) -> str:
@@ -22,18 +24,21 @@ def _normalize_role(role) -> str:
 def authenticate_user(db: Session, user: LoginRequest):
     db_user = get_user_by_username(db, user.user_name)
     if not db_user:
+        logger.warning("AuthService: login failed, user not found (user_name=%s)", user.user_name)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
 
     if not verify_password(user.password, db_user.password):
+        logger.warning("AuthService: login failed, bad password (user_name=%s)", user.user_name)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
 
     if not db_user.is_active:
+        logger.warning("AuthService: login failed, user deactivated (user_name=%s)", user.user_name)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User account is deactivated"

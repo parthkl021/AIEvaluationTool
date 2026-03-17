@@ -35,7 +35,21 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
   const currentUserUrl =
     process.env.REACT_APP_CURRENT_USER_URL ||
     `${tdmsBaseUrl}/api/users/me`;
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const refreshToken = localStorage.getItem("refresh_token");
+
+    if (refreshToken) {
+      try {
+        await fetch(`${process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:7500"}/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      } catch (error) {
+        console.warn("Logout request failed", error);
+      }
+    }
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");

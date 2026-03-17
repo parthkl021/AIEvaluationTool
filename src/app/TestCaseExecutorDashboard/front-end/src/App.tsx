@@ -17,6 +17,17 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (hash) {
+      const values = Object.fromEntries(new URLSearchParams(hash));
+      if (values.access_token && values.refresh_token) {
+        localStorage.setItem("access_token", values.access_token);
+        localStorage.setItem("refresh_token", values.refresh_token);
+        if (values.user_name) localStorage.setItem("user_name", values.user_name);
+        if (values.role) localStorage.setItem("role", values.role);
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      }
+    }
     const token = localStorage.getItem("access_token");
     setIsAuthenticated(!!token);
     setLoading(false);
@@ -49,7 +60,7 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={<LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />}
+        element={<LoginPage />}
       />
       <Route
         path="/*"

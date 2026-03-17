@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, Response
+from fastapi import FastAPI, Depends, Response, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from controllers import auth
@@ -80,6 +81,71 @@ async def logout(token_data: LogoutRequest, response: Response):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return result
+
+@app.get("/web/login", response_class=HTMLResponse)
+async def web_login(return_url: str = "http://localhost:8000/dashboard"):
+    html = """
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+      <meta charset='UTF-8' />
+      <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+      <title>Central Login</title>
+      <style>
+        body {{ font-family: Arial, sans-serif; background:#f5f7ff; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }}
+        .card {{ background:white; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.08); width:min(95%,420px); padding:24px; }}
+        input{{ width:100%; padding:10px; margin:0.33rem 0; border:1px solid #ced4da; border-radius:6px; }}
+        button{{ width:100%; padding:10px; margin-top:10px; border:none; border-radius:6px; background:#4338ca; color:white; font-size:1rem; }}
+      </style>
+    </head>
+    <body>
+    <div class='card'>
+      <h2>Central Login</h2>
+      <p>Use your shared credentials across applications.</p>
+      <form id='login-form'>
+        <input id='user_name' name='user_name' placeholder='Username' required />
+        <input id='password' name='password' placeholder='Password' type='password' required />
+        <button type='submit'>Sign in</button>
+      </form>
+      <div id='error' style='color:#c53030;margin-top:12px; font-size:.9rem;'></div>
+    </div>
+    <script>
+      const q = new URLSearchParams(window.location.search);
+      const returnUrl = q.get('return_url') || 'http://localhost:8000/dashboard';
+      document.getElementById('login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const user_name = document.getElementById('user_name').value;
+        const password = document.getElementById('password').value;
+        const res = await fetch('/login', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ user_name, password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          document.getElementById('error').innerText = data.detail || 'Login failed';
+          return;
+        }
+        const url = new URL(returnUrl, window.location.origin);
+        const fragment = new URLSearchParams({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          user_name: data.user_name,
+          role: data.role,
+        }).toString();
+        window.location.href = `${url.toString()}#${fragment}`;
+      };
+    </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
+@app.get("/web/logout")
+async def web_logout(return_url: str = "http://localhost:8000"):
+    response = RedirectResponse(url=return_url)
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return response
 
 if __name__ == "__main__":
     import uvicorn

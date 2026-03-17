@@ -155,17 +155,28 @@ const Sidebar = () => {
             </div>
           </div>
         </div>
-        <Link
-          to="/"
-          onClick={() => {
+        <button
+          type="button"
+          onClick={async () => {
+            const refreshToken = localStorage.getItem("refresh_token");
+            if (refreshToken) {
+              await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500"}/logout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+              }).catch(() => void 0);
+            }
             localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
             localStorage.removeItem("user_name");
+            localStorage.removeItem("role");
+            navigate("/");
           }}
           className="flex items-center gap-3 px-4 py-3 text-primary-foreground/80 hover:bg-white/10 rounded-lg transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span>Log out</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

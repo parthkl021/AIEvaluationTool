@@ -6,14 +6,12 @@ export const AUTH_KEYS = {
   ROLE: 'role'
 };
 
-export const getStoredTokens = () => {
-  return {
-    accessToken: localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN),
-    refreshToken: localStorage.getItem(AUTH_KEYS.REFRESH_TOKEN),
-    userName: localStorage.getItem(AUTH_KEYS.USER_NAME),
-    role: localStorage.getItem(AUTH_KEYS.ROLE)
-  };
-};
+export const getStoredTokens = () => ({
+  accessToken: localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN),
+  refreshToken: localStorage.getItem(AUTH_KEYS.REFRESH_TOKEN),
+  userName: localStorage.getItem(AUTH_KEYS.USER_NAME),
+  role: localStorage.getItem(AUTH_KEYS.ROLE),
+});
 
 export const setStoredTokens = (tokens: {
   access_token: string;
@@ -34,20 +32,35 @@ export const clearStoredTokens = () => {
   localStorage.removeItem(AUTH_KEYS.ROLE);
 };
 
-export const isAuthenticated = () => {
-  return !!localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+export const isAuthenticated = () => !!localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+
+export const parseUrlHashTokens = () => {
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return null;
+  const values = Object.fromEntries(new URLSearchParams(hash));
+
+  if (values.access_token && values.refresh_token) {
+    setStoredTokens({
+      access_token: values.access_token,
+      refresh_token: values.refresh_token,
+      user_name: values.user_name || '',
+      role: values.role || '',
+    });
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    return values;
+  }
+
+  return null;
 };
 
-export const refreshAccessToken = async (): Promise<boolean> => {
+export const refreshAccessToken = async (refreshUrl: string): Promise<boolean> => {
   const refreshToken = localStorage.getItem(AUTH_KEYS.REFRESH_TOKEN);
   if (!refreshToken) return false;
 
   try {
-    const response = await fetch('/refresh', {
+    const response = await fetch(refreshUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
