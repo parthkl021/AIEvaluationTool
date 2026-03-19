@@ -35,12 +35,23 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
   const currentUserUrl =
     process.env.REACT_APP_CURRENT_USER_URL ||
     `${tdmsBaseUrl}/api/users/me`;
-  const handleLogout = async () => {
-    const refreshToken = localStorage.getItem("refresh_token");
+  const authLoginUrl = process.env.REACT_APP_AUTH_SERVICE_URL ? `${process.env.REACT_APP_AUTH_SERVICE_URL}/web/login` : "http://localhost:7500/web/login";
 
+  const clearSession = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+  };
+
+  const redirectToLogin = () => {
+    clearSession();
+    window.location.href = `${authLoginUrl}`;
+  };
+
+  const handleLogout = async () => {
     try {
-      const authUrl = process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:7500";
-      await fetch(`${authUrl}/web/logout?return_url=${encodeURIComponent(window.location.origin + '/login')}`, {
+      await fetch(authLoginUrl.replace("/web/login", "/web/logout") , {
         method: "GET",
         credentials: "include",
       });
@@ -48,12 +59,9 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
       console.warn("Logout request failed", error);
     }
 
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
+    clearSession();
     onLogout?.();
-    navigate("/login");
+    redirectToLogin();
   };
 
   useEffect(() => {
@@ -78,12 +86,9 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
           setUserInfo(data);
         } else if (response.status === 401) {
           // Token expired or invalid
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
-    onLogout?.();
-    navigate("/login");
+          clearSession();
+          onLogout?.();
+          redirectToLogin();
         } else {
           // Use fallback values from localStorage if API fails
           const storedUsername = localStorage.getItem("user_name");
@@ -92,7 +97,13 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
           }
         }
       } catch (error) {
-        // Use fallback values from localStorage if API fails
+        // if check returns unauthorized by default, redirect to login
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          clearSession();
+          redirectToLogin();
+          return;
+        }
         const storedUsername = localStorage.getItem("user_name");
         if (storedUsername) {
           setUserInfo({ user_name: storedUsername, email: "", role: "User" });

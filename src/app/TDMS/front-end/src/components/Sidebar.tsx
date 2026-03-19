@@ -28,13 +28,27 @@ const Sidebar = () => {
   const [isLoading, setIsLoading] = useState(true);
   const testRunsHomeUrl =
     import.meta.env.VITE_TEST_RUNS_HOME_URL || "http://localhost:3000/";
+  const authServiceUrl = import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500";
+  const authLoginUrl = `${authServiceUrl}/web/login`;
+
+  const clearSession = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+  };
+
+  const redirectToLogin = () => {
+    clearSession();
+    window.location.href = `${authLoginUrl}`;
+  };
 
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem("access_token");
         if (!token) {
-          navigate("/");
+          redirectToLogin();
           return;
         }
 
@@ -50,14 +64,12 @@ const Sidebar = () => {
           setUserInfo(data);
         } else if (response.status === 401) {
           // Token expired or invalid
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("user_name");
-          navigate("/");
           toast({
             title: "Session Expired",
             description: "Please login again",
             variant: "destructive",
           });
+          redirectToLogin();
         } else {
           // Use fallback values from localStorage if API fails
           const storedUsername = localStorage.getItem("user_name");
@@ -158,16 +170,15 @@ const Sidebar = () => {
         <button
           type="button"
           onClick={async () => {
-            const authUrl = import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500";
-            await fetch(`${authUrl}/web/logout?return_url=${encodeURIComponent(window.location.origin + '/login')}`, {
-              method: "GET",
-              credentials: "include",
-            }).catch(() => void 0);
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("refresh_token");
-            localStorage.removeItem("user_name");
-            localStorage.removeItem("role");
-            navigate("/");
+            try {
+              await fetch(`${authLoginUrl.replace('/web/login', '/web/logout')}`, {
+                method: "GET",
+                credentials: "include",
+              });
+            } catch {
+              // ignore network errors; still clear local state
+            }
+            redirectToLogin();
           }}
           className="flex items-center gap-3 px-4 py-3 text-primary-foreground/80 hover:bg-white/10 rounded-lg transition-colors"
         >
