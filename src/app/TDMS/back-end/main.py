@@ -91,6 +91,14 @@ app.add_middleware(
 app.add_middleware(AuthMiddleware)
 
 
+@app.get("/", tags=["Health"])
+async def root():
+    return {
+        "status": "ok",
+        "service": "AIEvaluationTool",
+    }
+
+
 app.include_router(dashboard.dashboard_router, tags=["Dashboard"])
 # app.include_router(testCase.testcase_router, tags=["Test Cases"])
 # app.include_router(response.response_router, tags=["Responses"])
