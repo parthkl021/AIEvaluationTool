@@ -354,7 +354,17 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           type="button"
                           className="action-icon-button action-analyse"
                           data-tooltip="Analyse"
-                          onClick={() => navigate(`/analyse/${encodeURIComponent(run.run_name)}`)}
+                          onClick={() => {
+                            if (typeof run.average_score === "number") {
+                              const confirmReanalyse = window.confirm(
+                                "This run already has a score. Do you want to reanalyse?"
+                              );
+
+                              if (!confirmReanalyse) return;
+                            }
+
+                            navigate(`/analyse/${encodeURIComponent(run.run_name)}`);
+                          }}
                           title="Analyse"
                           aria-label={`Analyse ${run.run_name}`}
                         >
