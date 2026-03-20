@@ -1,19 +1,17 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import logo from '../../../../src/assets/logo/cerai-logo.png';
 import iit from '../../../../src/assets/iitm/iit-logo.png';
 import wsai from '../../../../src/assets/logo/WSAI_Logo.png';
+import { clearSession } from '../../../utils/auth';
 
 const Navbar: React.FC = () => {
-  const navigate = useNavigate();
+  const authLoginUrl = process.env.REACT_APP_AUTH_SERVICE_URL ? `${process.env.REACT_APP_AUTH_SERVICE_URL}/web/login` : 'http://localhost:7500/web/login';
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_name');
-    localStorage.removeItem('role');
-    navigate('/login');
+    clearSession();
+    window.location.replace(authLoginUrl);
   };
 
   return (

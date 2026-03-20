@@ -1,8 +1,8 @@
 import { Home, Users, LogOut } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ceraiLogo from "../../../assets/logo/cerai-logo.png";
-import { LOGIN_URL } from "../../../config/api";
+import { clearSession } from "../../../utils/auth";
 import "./sidebar.css";
 
 interface UserInfo {
@@ -24,10 +24,8 @@ interface SidebarProps {
 
 const Sidebar = ({ onLogout }: SidebarProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<UserInfo>({ user_name: "UserName", email: "", role: "Admin" });
   const [isLoading, setIsLoading] = useState(true);
-  const loginUrl = LOGIN_URL;
   const testDataUrl = process.env.REACT_APP_TEST_DATA_URL || "http://localhost:8080/dashboard";
   const userListUrl = process.env.REACT_APP_USER_LIST_URL || "http://localhost:8080/users";
   const tdmsBaseUrl =
@@ -36,18 +34,6 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
     process.env.REACT_APP_CURRENT_USER_URL ||
     `${tdmsBaseUrl}/api/users/me`;
   const authLoginUrl = process.env.REACT_APP_AUTH_SERVICE_URL ? `${process.env.REACT_APP_AUTH_SERVICE_URL}/web/login` : "http://localhost:7500/web/login";
-
-  const clearSession = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
-  };
-
-  const redirectToLogin = () => {
-    clearSession();
-    window.location.href = `${authLoginUrl}`;
-  };
 
   const handleLogout = async () => {
     try {
@@ -61,7 +47,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
 
     clearSession();
     onLogout?.();
-    redirectToLogin();
+    window.location.replace(authLoginUrl);
   };
 
   useEffect(() => {
@@ -69,7 +55,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
       try {
         const token = localStorage.getItem("access_token");
         if (!token) {
-          navigate("/login");
+          window.location.replace(authLoginUrl);
           return;
         }
 
@@ -88,7 +74,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
           // Token expired or invalid
           clearSession();
           onLogout?.();
-          redirectToLogin();
+          window.location.replace(authLoginUrl);
         } else {
           // Use fallback values from localStorage if API fails
           const storedUsername = localStorage.getItem("user_name");
@@ -101,7 +87,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
         const token = localStorage.getItem("access_token");
         if (!token) {
           clearSession();
-          redirectToLogin();
+          window.location.replace(authLoginUrl);
           return;
         }
         const storedUsername = localStorage.getItem("user_name");
@@ -114,7 +100,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
     };
 
     fetchUserInfo();
-  }, [currentUserUrl, navigate]);
+  }, [authLoginUrl, currentUserUrl, onLogout]);
 
   const navItems: NavItem[] = [
     { icon: Home, label: "Home", path: "/" },

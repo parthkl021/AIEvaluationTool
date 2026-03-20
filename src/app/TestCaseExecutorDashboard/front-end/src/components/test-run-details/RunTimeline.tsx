@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./runtimeline.module.css";
-import { API_ENDPOINTS, LOGIN_URL } from "../../config/api";
+import { API_ENDPOINTS } from "../../config/api";
+import { redirectToLogin } from "../../utils/auth";
 
 /* ===== TYPES ===== */
 
@@ -25,7 +26,6 @@ interface Props {
 
 const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric,onDurationCalculated }) => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const loginUrl = LOGIN_URL;
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("access_token");
@@ -37,14 +37,6 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric,on
       : {
           "Content-Type": "application/json",
         };
-  };
-
-  const redirectToLogin = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
-    window.location.replace(loginUrl);
   };
 
   useEffect(() => {
@@ -60,7 +52,7 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric,on
         return res.json();
       })
       .then(setEvents);
-  }, [runName, loginUrl]);
+  }, [runName]);
 
   /* ================= CALCULATE TOTAL EXECUTION TIME ================= */
 

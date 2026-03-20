@@ -6,7 +6,8 @@ import RunTimeline from "./RunTimeline";
 import DetailCard from "../common/DetailCard/DetailCard";
 import AppButton from "../common/Button/AppButton";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL, API_ENDPOINTS, LOGIN_URL } from "../../config/api";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { redirectToLogin } from "../../utils/auth";
 
 interface RunSummary {
   run_id: number;
@@ -61,7 +62,6 @@ const RunDetails: React.FC = () => {
   const filterRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const navigate = useNavigate();
-  const loginUrl = LOGIN_URL;
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("access_token");
@@ -73,14 +73,6 @@ const RunDetails: React.FC = () => {
       : {
           "Content-Type": "application/json",
         };
-  };
-
-  const redirectToLogin = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
-    window.location.replace(loginUrl);
   };
 
   const [activeFilters, setActiveFilters] = useState<{ metric?: string; status?: string }>({});
@@ -144,7 +136,7 @@ const RunDetails: React.FC = () => {
       })
       .then((data) => setFiltersData({ metrics: data.metrics, statuses: data.statuses }))
       .catch(console.error);
-  }, [loginUrl]);
+  }, []);
 
   useEffect(() => {
     const updateScrollHint = () => {

@@ -4,14 +4,14 @@ import { AllFilters } from "../../types/Filters";
 import { useNavigate } from "react-router-dom";
 import FilterSelect from "../common/Filters/Filters";
 import AppButton from "../common/Button/AppButton";
-import { API_BASE_URL, API_ENDPOINTS, LOGIN_URL } from "../../config/api";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { redirectToLogin } from "../../utils/auth";
 interface FiltersProps {
   onFilterChange?: (filterType: string, value: string) => void;
 }
 
 const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
   const navigate = useNavigate();
-  const loginUrl = LOGIN_URL;
   const [filters, setFilters] = useState<AllFilters>({
     domains: [],
     languages: [],
@@ -42,11 +42,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
     })
       .then((res) => {
         if (res.status === 401) {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          localStorage.removeItem("user_name");
-          localStorage.removeItem("role");
-          navigate("/login");
+          redirectToLogin();
           throw new Error("Unauthorized");
         }
         if (!res.ok) {
@@ -62,7 +58,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         console.error("Error fetching filters:", err);
         setIsLoading(false);
       });
-  }, [loginUrl, navigate]);
+  }, []);
 
   const filterConfigs = [
     { type: "domain", label: "Domain", options: filters.domains },

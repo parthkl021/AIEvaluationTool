@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { API_ENDPOINTS, LOGIN_URL } from "../../config/api";
+import { API_ENDPOINTS } from "../../config/api";
+import { redirectToLogin } from "../../utils/auth";
 interface ModalProps {
   conversationId: number | null;
 }
@@ -125,7 +126,6 @@ function Modal({ conversationId }: ModalProps) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loginUrl = LOGIN_URL;
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("access_token");
@@ -137,14 +137,6 @@ function Modal({ conversationId }: ModalProps) {
       : {
           "Content-Type": "application/json",
         };
-  };
-
-  const redirectToLogin = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("role");
-    window.location.replace(loginUrl);
   };
 
   useEffect(() => {
@@ -173,7 +165,7 @@ function Modal({ conversationId }: ModalProps) {
     };
 
     fetchData();
-  }, [conversationId, loginUrl]);
+  }, [conversationId]);
 
   return (
      <div
