@@ -69,6 +69,7 @@ class DriverManager:
         try:
             if selenium_mode == "remote":
                 logger.info(f"Using Remote WebDriver at {remote_url}")
+                opts.add_argument("--user-data-dir=/home/seluser/chrome-data")
                 self.driver = webdriver.Remote(
                     command_executor=remote_url,
                     options=opts
@@ -387,6 +388,7 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
     app_cfg = load_xpaths()["applications"][app_name.lower()]
     chat_cfg = app_cfg["ChatPage"]
     entity_name = cfg.get("agent_name")
+    contact_selection = chat_cfg.get("contact_selection_xpath")
 
     try:
         search_input_xpath = chat_cfg.get("contact_search_element") or chat_cfg.get("model_name_entry_element")
@@ -397,9 +399,14 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
         search_box = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, search_input_xpath))
         )
+        search_box.click()
         search_box.clear()
         search_box.send_keys(entity_name)
-        search_box.send_keys(Keys.RETURN)
+
+        contact_select = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, contact_selection))
+        )
+        contact_select.click()
 
         logger.info(f"{app_name}: '{entity_name}' search successful")
         return True

@@ -27,6 +27,8 @@ services:
       - "4444:4444" # Selenium WebDriver endpoint
     environment:
       - SE_VNC_NO_PASSWORD=1
+    volumes:
+      - ./chrome-data:/home/seluser/chrome-data
     restart: unless-stopped
 
   interface-manager:
