@@ -18,6 +18,7 @@ interface NavItem {
   path: string;
   externalUrl?: string;
   requiredPermission?: keyof import("@/utils/permissions").RolePermissions;
+  allowedRoles?: string[];
 }
 
 const Sidebar = () => {
@@ -92,7 +93,7 @@ const Sidebar = () => {
   }, [navigate, toast]);
 
   const navItems: NavItem[] = [
-    { icon: Home, label: "Home", path: "", externalUrl: testRunsHomeUrl },
+    { icon: Home, label: "Home", path: "", externalUrl: testRunsHomeUrl, allowedRoles: ["admin", "manager"] },
     { icon: Home, label: "Test Data", path: "/dashboard" },
     { 
       icon: Users, 
@@ -114,6 +115,12 @@ const Sidebar = () => {
       <nav className="flex-1 px-3 mt-8">
         {navItems
           .filter((item) => {
+            const normalizedRole = userInfo.role.toLowerCase();
+
+            if (item.allowedRoles && !item.allowedRoles.includes(normalizedRole)) {
+              return false;
+            }
+
             // If no permission required, show to all users
             if (!item.requiredPermission) {
               return true;

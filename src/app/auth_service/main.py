@@ -14,6 +14,21 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+TCE_APP_URL = os.getenv("TCE_APP_URL", "http://localhost:3000")
+TDMS_APP_URL = os.getenv("TDMS_APP_URL", "http://localhost:8080/dashboard")
+
+
+def resolve_redirect_url(role: str | None, requested_return_url: str | None) -> str:
+    if requested_return_url and requested_return_url != "http://localhost:7500/web/portal":
+        return requested_return_url
+
+    normalized_role = (role or "").strip().lower()
+    if normalized_role in {"admin", "manager"}:
+        return TCE_APP_URL
+    if normalized_role in {"curator", "viewer"}:
+        return TDMS_APP_URL
+    return requested_return_url or TDMS_APP_URL
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Auth Service...")
@@ -100,13 +115,14 @@ async def web_login(
     if refresh_token_cookie:
         try:
             tokens = auth.refresh_access_token(db, RefreshTokenRequest(refresh_token=refresh_token_cookie))
+            redirect_target = resolve_redirect_url(tokens.role, return_url)
             redirect_params = {
                 "access_token": tokens.access_token,
                 "refresh_token": tokens.refresh_token,
                 "user_name": tokens.user_name,
                 "role": tokens.role,
             }
-            redirect_url = f"{return_url}#{urlencode(redirect_params)}"
+            redirect_url = f"{redirect_target}#{urlencode(redirect_params)}"
             response = RedirectResponse(redirect_url)
             cookie_secure = os.getenv("COOKIE_SECURE", "").lower() in {"1", "true", "yes"}
             cookie_samesite = os.getenv("COOKIE_SAMESITE", "lax")
@@ -283,7 +299,7 @@ async def web_login(
       </header>
       <main class='hero'>
         <section class='card'>
-          <h1 class='title'>Test Data Management<br />System</h1>
+          <h1 class='title'>AI Evaluation Tool <br> Login</h1>
           <form id='login-form'>
             <div class='field'>
               <label class='label' for='user_name'>User Name :</label>
@@ -305,6 +321,22 @@ async def web_login(
     <script>
       const q = new URLSearchParams(window.location.search);
       const returnUrl = q.get('return_url') || {return_url!r};
+      const defaultPortalUrl = 'http://localhost:7500/web/portal';
+      const tceAppUrl = {TCE_APP_URL!r};
+      const tdmsAppUrl = {TDMS_APP_URL!r};
+      const resolveRedirectUrl = (role, requestedReturnUrl) => {{
+        if (requestedReturnUrl && requestedReturnUrl !== defaultPortalUrl) {{
+          return requestedReturnUrl;
+        }}
+        const normalizedRole = (role || '').trim().toLowerCase();
+        if (normalizedRole === 'admin' || normalizedRole === 'manager') {{
+          return tceAppUrl;
+        }}
+        if (normalizedRole === 'curator' || normalizedRole === 'viewer') {{
+          return tdmsAppUrl;
+        }}
+        return requestedReturnUrl || tdmsAppUrl;
+      }};
       const passwordInput = document.getElementById('password');
       const togglePassword = document.getElementById('toggle-password');
       togglePassword.onclick = () => {{
@@ -326,7 +358,8 @@ async def web_login(
           document.getElementById('error').innerText = data.detail || 'Login failed';
           return;
         }}
-        const url = new URL(returnUrl, window.location.origin);
+        const redirectUrl = resolveRedirectUrl(data.role, returnUrl);
+        const url = new URL(redirectUrl, window.location.origin);
         const fragment = new URLSearchParams({{
           access_token: data.access_token,
           refresh_token: data.refresh_token,
@@ -343,8 +376,8 @@ async def web_login(
 
 @app.get("/web/portal", response_class=HTMLResponse)
 async def web_portal():
-    tdms_url = os.getenv("TDMS_APP_URL", "http://localhost:3000/dashboard")
-    tce_url = os.getenv("TCE_APP_URL", "http://localhost:8080/dashboard")
+    tdms_url = TDMS_APP_URL
+    tce_url = TCE_APP_URL
     html = f"""
     <!DOCTYPE html>
     <html lang='en'>
