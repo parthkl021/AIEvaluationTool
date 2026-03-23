@@ -1,4 +1,4 @@
-import { LOGIN_URL } from "../config/api";
+import { AUTH_PAGE_URL } from "../config/api";
 
 export const clearSession = (): void => {
   localStorage.removeItem("access_token");
@@ -9,5 +9,5 @@ export const clearSession = (): void => {
 
 export const redirectToLogin = (): void => {
   clearSession();
-  window.location.replace(LOGIN_URL);
+  window.location.replace(AUTH_PAGE_URL);
 };

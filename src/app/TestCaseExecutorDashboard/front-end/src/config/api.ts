@@ -6,6 +6,7 @@ export const AUTH_SERVICE_URL =
 
 export const AUTH_PAGE_URL = `${AUTH_SERVICE_URL}/web/login`;
 export const LOGIN_URL = process.env.REACT_APP_LOGIN_URL || AUTH_PAGE_URL;
+export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
 
  export const API_ENDPOINTS = {
     GET_ALL_FILTERS: "/get_all_filters",

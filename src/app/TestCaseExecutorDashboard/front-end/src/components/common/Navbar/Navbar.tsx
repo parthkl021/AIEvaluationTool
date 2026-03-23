@@ -5,13 +5,12 @@ import logo from '../../../../src/assets/logo/cerai-logo.png';
 import iit from '../../../../src/assets/iitm/iit-logo.png';
 import wsai from '../../../../src/assets/logo/WSAI_Logo.png';
 import { clearSession } from '../../../utils/auth';
+import { AUTH_LOGOUT_URL } from '../../../config/api';
 
 const Navbar: React.FC = () => {
-  const authLoginUrl = process.env.REACT_APP_AUTH_SERVICE_URL ? `${process.env.REACT_APP_AUTH_SERVICE_URL}/web/login` : 'http://localhost:7500/web/login';
-
   const handleLogout = () => {
     clearSession();
-    window.location.replace(authLoginUrl);
+    window.location.replace(AUTH_LOGOUT_URL);
   };
 
   return (
