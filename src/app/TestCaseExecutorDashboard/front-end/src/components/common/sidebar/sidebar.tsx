@@ -16,6 +16,7 @@ interface NavItem {
   label: string;
   path: string;
   externalUrl?: string;
+  allowedRoles?: string[];
 }
 
 interface SidebarProps {
@@ -119,7 +120,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
   const navItems: NavItem[] = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Home, label: "Test Data", path: "", externalUrl: testDataUrl },
-    { icon: Users, label: "User's List", path: "", externalUrl: userListUrl },
+    { icon: Users, label: "User's List", path: "", externalUrl: userListUrl, allowedRoles: ["admin"] },
   ];
 
   return (
@@ -131,7 +132,15 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
+        {navItems
+          .filter((item) => {
+            const normalizedRole = userInfo.role.toLowerCase();
+            if (item.allowedRoles && !item.allowedRoles.includes(normalizedRole)) {
+              return false;
+            }
+            return true;
+          })
+          .map((item) => {
           const Icon = item.icon;
           const isActive = !item.externalUrl && location.pathname === item.path;
 
