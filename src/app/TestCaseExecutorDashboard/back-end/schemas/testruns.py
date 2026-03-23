@@ -8,6 +8,7 @@ class TestRunResponse(BaseModel):
     status: str
     start_ts: str
     end_ts: Optional[str]
+    evaluation_ts: Optional[str]
     domain: Optional[str] 
     duration_ms: Optional[int] = None
     average_score: Optional[float] = None

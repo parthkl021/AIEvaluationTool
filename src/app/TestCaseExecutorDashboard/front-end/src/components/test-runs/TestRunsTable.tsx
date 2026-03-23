@@ -14,6 +14,7 @@ interface TestRun {
   domain: string;
   duration_ms?: number;
   average_score?: number | null;
+  evaluation_ts?: string;
 }
 
 interface HeaderConfig {
@@ -69,6 +70,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     // { key: "end_ts", label: "Ended At", filterable: false, sortable: true, sortKey: "end_ts" },
     { key: "duration", label: "Duration", filterable: false },
     { key: "average_score", label: "Score", filterable: false },
+    { key: "evaluation_ts", label: "Evaluation Time", filterable: false },
     { key: "status", label: "Status", filterable: true, filterType: "status" },
     { key: "domain", label: "Domain", filterable: true, filterType: "domain" },
     { key: "actions", label: "Actions", filterable: false },
@@ -320,6 +322,11 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                     <td onClick={(e) => e.stopPropagation()}>
                       {typeof run.average_score === "number"
                         ? run.average_score.toFixed(2)
+                        : "-"}
+                    </td>
+                     <td>
+                      {run.evaluation_ts != null
+                        ? run.evaluation_ts  // 👈 raw ISO string like "2025-03-20T14:32:00"
                         : "-"}
                     </td>
                     <td>

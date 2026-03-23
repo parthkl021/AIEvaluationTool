@@ -134,7 +134,11 @@ def get_all_test_runs_service(
                 if scores
                 else None
             )
-                   
+            evaluation_ts = max(
+                (e.evaluation_ts for e in timeline if e.evaluation_ts),
+                default=None
+            )    
+            print("evaluation time stamp", evaluation_ts)   
             response.append(
                 TestRunResponse(
                     run_id=r.run_id,
@@ -145,7 +149,8 @@ def get_all_test_runs_service(
                     end_ts=r.end_ts,
                     domain=domain_name,
                     duration_ms=duration_ms,
-                    average_score=average_score
+                    average_score=average_score,
+                    evaluation_ts=evaluation_ts
                 )
             )
 

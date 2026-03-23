@@ -80,19 +80,16 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
   isAnalysing,
 }) => {
   const grouped = useMemo(() => {
-    const map: Record<string, Record<string, RunDetail[]>> = {};
+    const map: Record<string, RunDetail[]> = {};
     details.forEach((d) => {
       const metric = d.metric_name || "Unknown";
-      const strategy = d.strategy_name || "Unknown";
-      if (!map[metric]) map[metric] = {};
-      if (!map[metric][strategy]) map[metric][strategy] = [];
-      map[metric][strategy].push(d);
+      if (!map[metric]) map[metric] = [];
+      map[metric].push(d);
     });
     return map;
   }, [details]);
 
   const [openMetrics, setOpenMetrics] = useState<Record<string, boolean>>({});
-  const [openStrategies, setOpenStrategies] = useState<Record<string, boolean>>({});
 
   // Initialise open state when groups first appear (preserve user toggles)
   useEffect(() => {
@@ -104,37 +101,24 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
       });
       return next;
     });
-    setOpenStrategies((prev) => {
-      const next: Record<string, boolean> = {};
-      metricKeys.forEach((m) => {
-        Object.keys(grouped[m]).forEach((s) => {
-          const key = `${m}::${s}`;
-          next[key] = key in prev ? prev[key] : Object.keys(grouped[m]).length <= 4;
-        });
-      });
-      return next;
-    });
   }, [grouped]);
 
-  // Auto-open the metric + strategy containing the currently running detail
+  // Auto-open the metric containing the currently running detail
   useEffect(() => {
     if (runningDetailId == null) return;
-    for (const [metric, strategies] of Object.entries(grouped)) {
-      for (const [strategy, items] of Object.entries(strategies)) {
-        if (items.some((d) => d.detail_id === runningDetailId)) {
-          setOpenMetrics((prev) => ({ ...prev, [metric]: true }));
-          setOpenStrategies((prev) => ({ ...prev, [`${metric}::${strategy}`]: true }));
-          return;
-        }
+    for (const [metric, items] of Object.entries(grouped)) {
+      if (items.some((d) => d.detail_id === runningDetailId)) {
+        setOpenMetrics((prev) => ({ ...prev, [metric]: true }));
+        return;
       }
     }
   }, [runningDetailId, grouped]);
 
-  const sortedMetricEntries = Object.entries(grouped).sort(([, aStrats], [, bStrats]) => {
-    const aRunning = Object.values(aStrats).flat().some(
+  const sortedMetricEntries = Object.entries(grouped).sort(([, aItems], [, bItems]) => {
+    const aRunning = aItems.some(
       (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
     );
-    const bRunning = Object.values(bStrats).flat().some(
+    const bRunning = bItems.some(
       (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
     );
     return aRunning === bRunning ? 0 : aRunning ? -1 : 1;
@@ -142,8 +126,7 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
 
   return (
     <div>
-      {sortedMetricEntries.map(([metric, strategies]) => {
-        const metricItems = Object.values(strategies).flat();
+      {sortedMetricEntries.map(([metric, metricItems]) => {
         const metricCompleted = metricItems.filter((d) => d.status === "COMPLETED").length;
         const metricRunning = metricItems.some(
           (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
@@ -204,126 +187,43 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
 
             {isMetricOpen && (
               <div style={{ padding: "8px 12px" }}>
-                {Object.entries(strategies)
-                  .sort(([, aItems], [, bItems]) => {
-                    const aRunning = aItems.some(
-                      (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
-                    );
-                    const bRunning = bItems.some(
-                      (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
-                    );
-                    return aRunning === bRunning ? 0 : aRunning ? -1 : 1;
-                  })
-                  .map(([strategy, items]) => {
-                  const stratKey = `${metric}::${strategy}`;
-                  const isStratOpen = openStrategies[stratKey] ?? false;
-                  const stratCompleted = items.filter((d) => d.status === "COMPLETED").length;
-                  const stratRunning = items.some(
-                    (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
-                  );
-                  const stratTotal = items.length;
-
-                  const stratStatusText =
-                    isAnalysing && stratRunning
-                      ? `${stratCompleted} / ${stratTotal} — running…`
-                      : `${stratCompleted} / ${stratTotal} completed`;
+                {metricItems.map((tc, idx) => {
+                  const isRunning =
+                    tc.status === "RUNNING" || tc.detail_id === runningDetailId;
 
                   return (
                     <div
-                      key={stratKey}
+                      key={tc.detail_id}
                       style={{
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        border: `1px solid ${stratRunning && isAnalysing ? "#93c5fd" : "#e2e8f0"}`,
-                        background: isStratOpen ? "#f1f5f9" : "#fff",
-                        boxShadow:
-                          stratRunning && isAnalysing ? "0 0 0 2px #dbeafe" : "none",
-                        transition: "box-shadow 300ms ease, border-color 300ms ease",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "7px 6px",
+                        borderBottom: idx < metricItems.length - 1 ? "1px solid #e2e8f0" : "none",
+                        background: isRunning ? "#eff6ff" : "transparent",
+                        fontWeight: isRunning ? 600 : 400,
+                        boxShadow: isRunning ? "0 0 0 2px #bfdbfe" : "none",
+                        borderRadius: isRunning ? 6 : 0,
+                        transition: "background 300ms ease, box-shadow 300ms ease",
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenStrategies((p) => ({ ...p, [stratKey]: !p[stratKey] }))
-                        }
+                      {statusIcon(tc.status)}
+                      <span
                         style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "8px 12px",
-                          background: "none",
-                          border: "none",
-                          fontWeight: 600,
-                          fontSize: "0.98rem",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
+                          minWidth: 80,
+                          fontFamily: "monospace",
+                          fontSize: "0.88rem",
                           color: "#334155",
-                          borderBottom: isStratOpen ? "1px solid #e2e8f0" : "none",
                         }}
                       >
-                        <span>
-                          {strategy}{" "}
-                          <span
-                            style={{
-                              fontWeight: 400,
-                              fontSize: "0.88rem",
-                              color: stratRunning && isAnalysing ? "#2563eb" : "#94a3b8",
-                            }}
-                          >
-                            {stratStatusText}
-                          </span>
-                        </span>
-                        <span>{isStratOpen ? "▼" : "▶"}</span>
-                      </button>
-
-                      {isStratOpen && (
-                        <div style={{ padding: "6px 10px" }}>
-                          {items.map((tc, idx) => {
-                            const isRunning =
-                              tc.status === "RUNNING" ||
-                              tc.detail_id === runningDetailId;
-
-                            return (
-                              <div
-                                key={tc.detail_id}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 12,
-                                  padding: "7px 6px",
-                                  borderBottom:
-                                    idx < items.length - 1 ? "1px solid #e2e8f0" : "none",
-                                  background: isRunning ? "#eff6ff" : "transparent",
-                                  fontWeight: isRunning ? 600 : 400,
-                                  boxShadow: isRunning ? "0 0 0 2px #bfdbfe" : "none",
-                                  borderRadius: isRunning ? 6 : 0,
-                                  transition: "background 300ms ease, box-shadow 300ms ease",
-                                }}
-                              >
-                                {statusIcon(tc.status)}
-                                <span
-                                  style={{
-                                    minWidth: 80,
-                                    fontFamily: "monospace",
-                                    fontSize: "0.88rem",
-                                    color: "#334155",
-                                  }}
-                                >
-                                  {tc.testcase_name}
-                                </span>
-                                <span style={{ minWidth: 80, fontSize: "0.88rem", color: "#475569" }}>
-                                  Status: {tc.status}
-                                </span>
-                                <span style={{ minWidth: 60, fontSize: "0.88rem", color: "#0f172a" }}>
-                                  Score:{" "}
-                                  {typeof tc.score === "number" ? tc.score.toFixed(2) : "—"}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                        {tc.testcase_name}
+                      </span>
+                      <span style={{ minWidth: 80, fontSize: "0.88rem", color: "#475569" }}>
+                        Status: {tc.status}
+                      </span>
+                      <span style={{ minWidth: 60, fontSize: "0.88rem", color: "#0f172a" }}>
+                        Score: {typeof tc.score === "number" ? tc.score.toFixed(2) : "—"}
+                      </span>
                     </div>
                   );
                 })}

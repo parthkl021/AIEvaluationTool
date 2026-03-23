@@ -33,7 +33,7 @@ from lib.orm.tables import TestRuns
 from lib.interface_manager import InterfaceManagerClient  # Import the InterfaceManagerClient from the lib directory
 from configuration.database import get_db
 from configuration.database import db
-
+from configuration.paths import profile_path
 from apis.testruns import router as testruns_router
 from apis.filters import router as filters_router
 from apis.analyse import router as analyse_router
@@ -495,13 +495,14 @@ async def execute_testcases(
     run
 ):
     print(f"🚀 Background execution started for run {run_id}")
+    
     client = None
     try:
         print("started")
         stop_watcher = threading.Event()
         watcher_thread = threading.Thread(
                 target=watch_im_process,
-                args=(interface_manager_config, "/home/varun/test_profile", stop_watcher),  # 👈 pass profile path here
+                args=(interface_manager_config, profile_path, stop_watcher),  
                 daemon=True
             )
         watcher_thread.start()
