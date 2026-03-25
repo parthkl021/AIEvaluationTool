@@ -307,8 +307,14 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                     key={run.run_id}
                     role="button"
                     className="table-row"
-                    onClick={() => navigate(`/test-runs/${run.run_name}`)}
-                  >
+                    onClick={() => {
+                      if (run.status === "RUNNING" || run.status === "NEW") {
+                        alert("Run is not completed yet");
+                        return;
+                      }
+                      navigate(`/test-runs/${run.run_name}`);
+                    }}
+                    >
                     <td className="id">{run.run_id}</td>
                     <td>{run.run_name}</td>
                     <td>{run.target}</td>
@@ -326,7 +332,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                     </td>
                      <td>
                       {run.evaluation_ts != null
-                        ? run.evaluation_ts  // 👈 raw ISO string like "2025-03-20T14:32:00"
+                        ? new Date(run.evaluation_ts).toLocaleString("en-US")  // 👈 raw ISO string like "2025-03-20T14:32:00"
                         : "-"}
                     </td>
                     <td>

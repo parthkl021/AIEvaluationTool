@@ -9,6 +9,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../../../.."))  # repo
 INTERFACE_MANAGER_CONFIG = os.path.abspath(
     os.path.join(BASE_DIR, "../../../interface_manager/config.json")
 )
+
+print(INTERFACE_MANAGER_CONFIG)
 profile_path = os.path.expanduser("~/test_profile")
 
 print(f"Determined INTERFACE_MANAGER_CONFIG path: {INTERFACE_MANAGER_CONFIG}")

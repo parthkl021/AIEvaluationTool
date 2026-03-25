@@ -1,13 +1,243 @@
 import os
 import sys
+import re
 from typing import Optional,List,Literal
 from fastapi import HTTPException, BackgroundTasks
 from datetime import datetime
-from configuration.paths import wb
+import randomname
+
+from configuration.paths import (
+    INTERFACE_MANAGER_CONFIG as interface_manager_config,
+    wb,
+)
 import tempfile
 
+from lib.data import Run
 from schemas import TestRunFullResponse, TestRunSummaryResponse, TestRunDetailsResponse,TestRunResponse, NewTestRun, FilterResponse, EvaluationItemResponse, RunEvaluationSummaryResponse
 from fastapi.responses import FileResponse
+from tasks.test_run_tasks import execute_testcases
+from utils.port import ensure_interface_manager_port_running
+
+
+def start_run_service(db, data: NewTestRun, background_tasks: BackgroundTasks):
+    ensure_interface_manager_port_running(interface_manager_config)
+    if data.testPlan:
+        print("Starting new test run...")
+        target = data.target
+        target = re.sub(r"\s*\(.*?\)", "", target)
+
+        plan_name = data.testPlan
+        test_case_id = data.testCaseId
+        metric_name = data.metric
+        domain_name = data.domain if data.domain else None
+        lang_name = data.language if data.language else None
+        provided_run_name = data.runName.strip() if data.runName else None
+        if test_case_id and metric_name:
+            raise HTTPException(
+                status_code=400,
+                detail="Provide either 'testCaseId' or 'metric', not both.",
+            )
+        try:
+            max_test_cases = int(data.maxTestCases)
+            print(max_test_cases)
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=400,
+                detail="maxTestCases must be a valid number",
+            )
+
+        if provided_run_name:
+            run_name = provided_run_name
+        else:
+            run_name = randomname.generate("v/*", "adj/*", "n/*", "ip/*").replace(
+                "/", "-"
+            )
+        start_time = datetime.now().isoformat()
+        run = Run(target=target, run_name=run_name, start_ts=start_time)
+        run_id = db.add_or_update_testrun(run)
+        print(f"Starting run: {run_name} with run id {run_id}")
+
+        if plan_name is None:
+            print(f"No test plan found with name {plan_name}.")
+            return
+        print(f"Starting run with Test Plan: {plan_name}")
+
+        if test_case_id:
+            testcases = db.get_testcase_by_name(test_case_id)
+            if not testcases:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Test case ID '{test_case_id}' does not exist",
+                )
+
+            testcases = [testcases]
+            total_testcases = len(testcases)
+            print(f"Length of testcases: {len(testcases)}")
+            print(type(testcases))
+
+            run.status = "RUNNING"
+            db.add_or_update_testrun(run=run)
+            background_tasks.add_task(
+                execute_testcases,
+                run_name,
+                run_id,
+                plan_name,
+                target,
+                testcases,
+                run,
+            )
+
+        elif metric_name:
+            is_metric_in_plan = db.is_metric_in_testplan(
+                metric_name=metric_name, plan_name=plan_name
+            )
+            if not is_metric_in_plan:
+                return
+            testcases = db.get_testcases_by_metric(
+                metric_name=metric_name,
+                n=max_test_cases,
+                lang_names=lang_name,
+                domain_name=domain_name,
+            )
+            if not testcases:
+                print("No Test cases Found")
+                return
+            total_testcases = len(testcases)
+            run.status = "RUNNING"
+            db.add_or_update_testrun(run=run)
+            background_tasks.add_task(
+                execute_testcases,
+                run_name,
+                run_id,
+                plan_name,
+                target,
+                testcases,
+                run,
+            )
+
+        else:
+            testcases = db.get_testcases_by_testplan(
+                plan_name=plan_name,
+                n=max_test_cases,
+                lang_names=lang_name,
+                domain_name=domain_name,
+            )
+            if not testcases:
+                print("No Test cases Found")
+                return
+            total_testcases = len(testcases)
+            run.status = "RUNNING"
+            db.add_or_update_testrun(run=run)
+            background_tasks.add_task(
+                execute_testcases,
+                run_name,
+                run_id,
+                plan_name,
+                target,
+                testcases,
+                run,
+            )
+
+        return {
+            "status": "success",
+            "runId": run_id,
+            "runName": run_name,
+            "testPlanName": plan_name,
+            "metricName": metric_name,
+            "target": target,
+            "totalTestCases": total_testcases,
+        }
+
+    return "Test Plan ID is mandatory"
+
+
+def continue_run_service(db, run_name: str):
+    run = db.get_run_by_name(run_name)
+
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    details = db.get_run_details_by_run_id(run.run_id)
+    print(f"Run {run_name} has {run} details")
+    print(f"Found {len(details)} details for run {run_name}")
+    return {"run": run, "details": details}
+
+
+def continue_run_with_plan_service(db, data: NewTestRun, background_tasks: BackgroundTasks):
+    ensure_interface_manager_port_running(interface_manager_config)
+    run = db.get_run_by_name(data.runName)
+
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    if run.status == "COMPLETED":
+        run.status = "RUNNING"
+        run.end_ts = None
+        db.add_or_update_testrun(run=run, override=True)
+
+    run_id = run.run_id
+    run_name = run.run_name
+
+    plan_name = data.testPlan
+    metric_name = data.metric
+    testcase_id = data.testCaseId
+    if testcase_id and metric_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either 'testCaseId' or 'metric', not both.",
+        )
+
+    if not plan_name:
+        raise HTTPException(status_code=400, detail="Test Plan is required")
+
+    try:
+        max_test_cases = int(data.maxTestCases)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid maxTestCases")
+
+    if metric_name:
+        testcases = db.get_testcases_by_metric(
+            metric_name=metric_name,
+            n=max_test_cases,
+            lang_names=data.language,
+            domain_name=data.domain,
+        )
+    elif testcase_id:
+        testcases = db.get_testcase_by_name(testcase_id)
+        if not testcases:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Test case ID '{testcase_id}' does not exist",
+            )
+        testcases = [testcases]
+    else:
+        testcases = db.get_testcases_by_testplan(
+            plan_name=plan_name,
+            n=max_test_cases,
+            lang_names=data.language,
+            domain_name=data.domain,
+        )
+
+    if not testcases:
+        raise HTTPException(status_code=400, detail="No testcases found")
+
+    background_tasks.add_task(
+        execute_testcases,
+        run_name,
+        run_id,
+        plan_name,
+        run.target,
+        testcases,
+        run,
+    )
+
+    return {
+        "status": "continued",
+        "runId": run_id,
+        "runName": run_name,
+        "addedPlan": plan_name,
+        "totalTestCases": len(testcases),
+    }
 
 def get_test_run_service(db, run_name: str, metric: Optional[str] = None, status: Optional[str] = None):
     try:

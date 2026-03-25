@@ -24,6 +24,7 @@ export const API_BASE_URL =
     `${API_BASE_URL}/targets/${encodeURIComponent(targetName)}/metadata`,
     START_RUN: `${API_BASE_URL}/start-run`,
     CONTINUE_RUN: `${API_BASE_URL}/continue-run`,    
+    DEV_Config: `${API_BASE_URL}/__dev/config`,
 }  
 
 

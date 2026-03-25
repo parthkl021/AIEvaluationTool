@@ -4,11 +4,64 @@ from typing import Optional, List,Literal
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from schemas import TestRunFullResponse,TestRunResponse,NewTestRun, FilterResponse,TimelineEvent,TestRunSummaryResponse
-from services.testruns import get_test_run_service,get_all_test_runs_service,get_metrics_by_plan_service,get_test_run_timeline_service,get_run_evaluation_summary_service,download_evaluation_report_service, RunEvaluationSummaryResponse, get_test_run_summary_service
+from schemas import (
+    ContinueRunRequest,
+    FilterResponse,
+    NewTestRun,
+    TestRunFullResponse,
+    TestRunResponse,
+    TestRunSummaryResponse,
+    TimelineEvent,
+)
+from services.testruns import (
+    RunEvaluationSummaryResponse,
+    continue_run_service,
+    continue_run_with_plan_service,
+    download_evaluation_report_service,
+    get_all_test_runs_service,
+    get_metrics_by_plan_service,
+    get_run_evaluation_summary_service,
+    get_test_run_service,
+    get_test_run_summary_service,
+    get_test_run_timeline_service,
+    start_run_service,
+)
 from configuration.database import get_db
 
 router = APIRouter()
+
+@router.post("/start-run")
+def start_run(data: NewTestRun, background_tasks: BackgroundTasks, db=Depends(get_db)):
+    try:
+        return start_run_service(db=db, data=data, background_tasks=background_tasks)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/continue-run")
+def continue_run(data: ContinueRunRequest, db=Depends(get_db)):
+    try:
+        return continue_run_service(db=db, run_name=data.run_name)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/continue-run-with-plan")
+def continue_run_with_plan(
+    data: NewTestRun, background_tasks: BackgroundTasks, db=Depends(get_db)
+):
+    try:
+        return continue_run_with_plan_service(
+            db=db, data=data, background_tasks=background_tasks
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get(
     "/test-runs/{run_name}",
