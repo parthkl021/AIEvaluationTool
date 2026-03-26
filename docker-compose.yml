@@ -66,6 +66,7 @@ services:
       - ./:/app
       - ./logs:/app/logs
       - ./data:/app/data
+      - ./reports:/app/src/app/response_analyzer/reports
     env_file:
       - .env
     tty: true
