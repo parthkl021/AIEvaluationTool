@@ -5,6 +5,7 @@ import { API_BASE_URL, API_ENDPOINTS,WS_BASE_URL } from "../../config/api";
 
 import CustomSelect from './CustomSelect/CustomSelect';
 import Loop from './Loop/Loop';
+import { useNavigate } from 'react-router-dom';
 
 interface RunFormData {
   runName?: string;   // 👈 add this
@@ -32,6 +33,7 @@ interface AllFiltersResponse {
 }
 
 const NewTestRunPage: React.FC = () => {
+  const navigate = useNavigate();
   // Sample data for dropdowns
   // const targets = ['Vaidya AI', 'Target 2', 'Target 3'];
   const testPlans = ['Plan 1', 'Plan 2', 'Plan 3'];
@@ -45,6 +47,26 @@ const NewTestRunPage: React.FC = () => {
   const [totalTestCases, setTotalTestCases] = useState(0);
   const [filters, setFilters] = useState<AllFiltersResponse | null>(null);
   const [planMetrics, setPlanMetrics] = useState<string[]>([]);
+
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem("access_token");
+    return token
+      ? {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      : {
+          "Content-Type": "application/json",
+        };
+  };
+
+  const redirectToLogin = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("role");
+    navigate("/login");
+  };
   
   const [formData, setFormData] = useState<RunFormData>({
     runName: "",   
@@ -56,11 +78,21 @@ const NewTestRunPage: React.FC = () => {
     domain: "",
     language: "",
   });
+
   const fetchTargetMetadata = async (targetName: string) => {
     try {
       const res = await fetch(
-        API_ENDPOINTS.GET_TARGET_METADATA(targetName)
+        API_ENDPOINTS.GET_TARGET_METADATA(targetName),
+        {
+          headers: getAuthHeaders(),
+          credentials: "include",
+        }
       );
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!res.ok) {
         throw new Error("Failed to fetch target metadata");
@@ -84,59 +116,93 @@ const NewTestRunPage: React.FC = () => {
       setLanguageOptions([]);
     }
   };
-  const isStartDisabled = !formData.testPlan || !formData.target  || isRunning
+
+  const isStartDisabled = !formData.testPlan || !formData.target  || isRunning;
   const isTargetSelected = !!formData.target;
+
   useEffect(() => {
-  const fetchFilters = async () => {
+    const fetchFilters = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`, {
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
+
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch filters (${res.status})`);
+        }
+
+        const data: AllFiltersResponse = await res.json();
+        setFilters(data);
+      } catch (err) {
+        console.error("Failed to fetch filters", err);
+      }
+    };
+
+    fetchFilters();
+  }, [navigate]);
+
+  const fetchMetricsByPlan = async (planName: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`);
-      const data: AllFiltersResponse = await res.json();
-      setFilters(data);
+      const res = await fetch(
+        `${API_BASE_URL}/get_metrics_by_plan/${planName}`,
+        {
+          headers: getAuthHeaders(),
+          credentials: "include",
+        }
+      );
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch metrics (${res.status})`);
+      }
+
+      const data = await res.json();
+      setPlanMetrics(data.map((m: any) => m.filter_name));
     } catch (err) {
-      console.error("Failed to fetch filters", err);
+      console.error("Failed to fetch metrics", err);
+      setPlanMetrics([]);
     }
   };
 
-  fetchFilters();
-}, []);
-const fetchMetricsByPlan = async (planName: string) => {
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}/get_metrics_by_plan/${planName}`
-    );
-    const data = await res.json();
-    setPlanMetrics(data.map((m: any) => m.filter_name));
-  } catch (err) {
-    console.error("Failed to fetch metrics", err);
-    setPlanMetrics([]);
-  }
-};
-const handleChange = (key: string, value: any) => {
-  setFormData(prev => ({
-    ...prev,
-    [key]: value,
-    ...(key === "testPlan" && { metric: "" })
-  }));
+  const handleChange = (key: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [key]: value,
+      ...(key === "testPlan" && { metric: "" })
+    }));
 
-  if (key === "testPlan") {
-    fetchMetricsByPlan(value); // 🔥 second fetch happens here
-  }
-  if (key === "target") {
-    fetchTargetMetadata(value);
-  }
-};
-  
+    if (key === "testPlan") {
+      fetchMetricsByPlan(value); // 🔥 second fetch happens here
+    }
+    if (key === "target") {
+      fetchTargetMetadata(value);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const res = await fetch(`${API_BASE_URL}/start-run`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
+      credentials: "include",
       body: JSON.stringify(formData),
     });
+
+    if (res.status === 401) {
+      redirectToLogin();
+      return;
+    }
 
     const runData = await res.json(); // <-- this should now include runName, runId, testPlanId, metricId
      if (!res.ok) {
@@ -161,11 +227,11 @@ const handleChange = (key: string, value: any) => {
       // Example: if backend sends total_test_cases
       // setTotalTestCases(data.total);
       // setCurrentTestCase(data.current);
-  };
+    };
 
-  ws.onclose = () => {
-    console.log("WebSocket closed");
-  };
+    ws.onclose = () => {
+      console.log("WebSocket closed");
+    };
   };
 
   return (

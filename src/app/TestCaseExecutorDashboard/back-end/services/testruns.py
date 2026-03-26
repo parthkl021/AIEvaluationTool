@@ -138,7 +138,7 @@ def get_all_test_runs_service(
                 (e.evaluation_ts for e in timeline if e.evaluation_ts),
                 default=None
             )    
-            print("evaluation time stamp", evaluation_ts)   
+            # print("evaluation time stamp", evaluation_ts)   
             response.append(
                 TestRunResponse(
                     run_id=r.run_id,
