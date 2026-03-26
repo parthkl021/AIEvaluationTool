@@ -6,6 +6,7 @@ import CustomSelect from './CustomSelect/CustomSelect';
 import Loop from './Loop/Loop';
 import { API_BASE_URL, API_ENDPOINTS, WS_BASE_URL } from "../../config/api";
 import { useParams } from 'react-router-dom';
+import { getAuthHeaders, redirectToLogin } from '../../utils/auth';
 
 interface RunFormData {
   runName: string;
@@ -63,7 +64,20 @@ const ContinueRunPage: React.FC = () => {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`);
+        const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_ALL_FILTERS}`, {
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
+
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch filters (${res.status})`);
+        }
+
         const data: AllFiltersResponse = await res.json();
         setFilters(data);
       } catch (err) {
@@ -82,7 +96,20 @@ const ContinueRunPage: React.FC = () => {
 
   const fetchMetricsByPlan = async (planName: string) => {
     try {
-      const res = await fetch(API_ENDPOINTS.GET_METRICS_BY_PLAN(planName));
+      const res = await fetch(API_ENDPOINTS.GET_METRICS_BY_PLAN(planName), {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch metrics (${res.status})`);
+      }
+
       const data = await res.json();
       setPlanMetrics(data.map((m: any) => m.filter_name));
     } catch (err) {
@@ -92,68 +119,84 @@ const ContinueRunPage: React.FC = () => {
   };
 
   const handleFetchRun = async (nameOverride?: string) => {
-  const name = nameOverride || formData.runName;
-  try {
-    const res = await fetch(`${API_BASE_URL}/continue-run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ run_name: name }),
-    });
+    const name = nameOverride || formData.runName;
+    try {
+      const res = await fetch(`${API_BASE_URL}/continue-run`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        credentials: "include",
+        body: JSON.stringify({ run_name: name }),
+      });
 
-    if (!res.ok) {
-      alert("Run not found");
-      return;
-    }
-
-    const data = await res.json();
-    
-    setExistingRun(data.run);
-    if (data.run?.target) {
-      fetchTargetMetadata(data.run.target);
-    }
-
-    const grouped: Record<string, string[]> = {};
-    data.details.forEach((d: any) => {
-      if (!grouped[d.plan_name]) grouped[d.plan_name] = [];
-      if (!grouped[d.plan_name].includes(d.metric_name)) {  // ✅ deduplicate
-        grouped[d.plan_name].push(d.metric_name);
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
       }
-    });
 
-    setGroupedDetails(grouped);  // ✅ always replaces, never merges
+      if (!res.ok) {
+        alert("Run not found");
+        return;
+      }
 
-  } catch (err) {
-    console.error(err);
-  }
-};
-  const fetchTargetMetadata = async (targetName: string) => {
-      try {
-        const res = await fetch(
-          API_ENDPOINTS.GET_TARGET_METADATA(targetName)
-        );
-  
-        if (!res.ok) {
-          throw new Error("Failed to fetch target metadata");
+      const data = await res.json();
+      
+      setExistingRun(data.run);
+      if (data.run?.target) {
+        fetchTargetMetadata(data.run.target);
+      }
+
+      const grouped: Record<string, string[]> = {};
+      data.details.forEach((d: any) => {
+        if (!grouped[d.plan_name]) grouped[d.plan_name] = [];
+        if (!grouped[d.plan_name].includes(d.metric_name)) {
+          grouped[d.plan_name].push(d.metric_name);
         }
-  
-        const data = await res.json();
-  
-        setDomainOptions(data.domains || []);
-        setLanguageOptions(data.languages || []);
-  
-        // Optional: reset selected domain & language
-        setFormData(prev => ({
-          ...prev,
-          domain: "",
-          language: ""
-        }));
-  
-      } catch (err) {
-        console.error("Error fetching target metadata:", err);
-        setDomainOptions([]);
-        setLanguageOptions([]);
+      });
+
+      setGroupedDetails(grouped);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchTargetMetadata = async (targetName: string) => {
+    try {
+      const res = await fetch(
+        API_ENDPOINTS.GET_TARGET_METADATA(targetName),
+        {
+          headers: getAuthHeaders(),
+          credentials: "include",
+        }
+      );
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
       }
-    };
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch target metadata");
+      }
+
+      const data = await res.json();
+
+      setDomainOptions(data.domains || []);
+      setLanguageOptions(data.languages || []);
+
+      setFormData(prev => ({
+        ...prev,
+        domain: "",
+        language: ""
+      }));
+
+    } catch (err) {
+      console.error("Error fetching target metadata:", err);
+      setDomainOptions([]);
+      setLanguageOptions([]);
+    }
+  };
+
   const handleChange = (key: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -182,9 +225,15 @@ const ContinueRunPage: React.FC = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/continue-run-with-plan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify(formData),
       });
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       const data = await res.json();
 
