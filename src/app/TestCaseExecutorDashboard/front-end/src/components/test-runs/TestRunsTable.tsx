@@ -63,6 +63,18 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     target: "targets",
     status: "statuses",
   };
+  const COLUMN_CLASS: Record<string, string> = {
+    run_id: "col-run-id",
+    run_name: "col-run-name",
+    target: "col-target",
+    start_ts: "col-started-at",
+    duration: "col-duration",
+    average_score: "col-score",
+    evaluation_ts: "col-evaluation",
+    status: "col-status",
+    domain: "col-domain",
+    actions: "col-actions",
+  };
   const headers: HeaderConfig[] = [
     { key: "run_id", label: "Run Id", filterable: false },
     { key: "run_name", label: "Run Name", filterable: false },
@@ -238,13 +250,20 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
       <div className="table-card">
         <div className="table-responsive">
           <table className="test-runs-table">
+            <colgroup>
+              {headers.map((header) => (
+                <col key={header.key} className={COLUMN_CLASS[header.key] || ""} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 {headers.map((header) => (
                   <th
                     key={header.key}
                     scope="col"
-                    className={`${header.filterable ? "filterable-header" : ""} ${header.sortable ? "sortable-header" : ""}`}
+                    className={`${COLUMN_CLASS[header.key] || ""} ${header.filterable ? "filterable-header" : ""} ${
+                      header.sortable ? "sortable-header" : ""
+                    }`}
                   >
                     <div className="header-content">
                       {/* Sortable columns */}
@@ -340,27 +359,43 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                       navigate(`/test-runs/${run.run_name}`);
                     }}
                     >
-                    <td className="id">{run.run_id}</td>
-                    <td>{run.run_name}</td>
-                    <td>{run.target}</td>
-                    <td>{new Date(run.start_ts).toLocaleString()}</td>
+                    <td className="col-run-id cell-center nowrap">{run.run_id}</td>
+                    <td className="col-run-name run-name-cell">
+                      <span className="run-name-text" title={run.run_name}>
+                        {run.run_name}
+                      </span>
+                    </td>
+                    <td className="col-target nowrap">
+                      <span className="cell-ellipsis" title={run.target}>
+                        {run.target}
+                      </span>
+                    </td>
+                    <td className="col-started-at nowrap">
+                      <span className="cell-ellipsis" title={new Date(run.start_ts).toLocaleString()}>
+                        {new Date(run.start_ts).toLocaleString()}
+                      </span>
+                    </td>
                     {/* <td>{run.end_ts ? new Date(run.end_ts).toLocaleString() : "-"}</td> */}
-                    <td>
+                    <td className="col-duration cell-center nowrap">
                       {run.duration_ms != null
                         ? formatDuration(run.duration_ms)
                         : "-"}
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}>
+                    <td className="col-score cell-center nowrap" onClick={(e) => e.stopPropagation()}>
                       {typeof run.average_score === "number"
                         ? run.average_score.toFixed(2)
                         : "-"}
                     </td>
-                     <td>
+                     <td className="col-evaluation nowrap">
                       {run.evaluation_ts != null
-                        ? new Date(run.evaluation_ts).toLocaleString("en-US")  // 👈 raw ISO string like "2025-03-20T14:32:00"
+                        ? (
+                          <span className="cell-ellipsis" title={new Date(run.evaluation_ts).toLocaleString("en-US")}>
+                            {new Date(run.evaluation_ts).toLocaleString("en-US")}
+                          </span>
+                        )  // 👈 raw ISO string like "2025-03-20T14:32:00"
                         : "-"}
                     </td>
-                    <td>
+                    <td className="col-status nowrap">
                       <span
                         className={`status-badge ${
                           run.status === "COMPLETED" || run.status === "PASSED"
@@ -375,8 +410,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                         {run.status}
                       </span>
                     </td>
-                    <td>{run.domain}</td>
-                    <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                    <td className="col-domain nowrap">
+                      <span className="cell-ellipsis" title={run.domain}>
+                        {run.domain}
+                      </span>
+                    </td>
+                    <td className="col-actions actions-cell nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="actions-group">
                         <button
                           type="button"
