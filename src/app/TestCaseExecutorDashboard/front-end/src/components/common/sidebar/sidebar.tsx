@@ -32,7 +32,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
   const testDataUrl = process.env.REACT_APP_TEST_DATA_URL || "http://localhost:8080/dashboard";
   const userListUrl = process.env.REACT_APP_USER_LIST_URL || "http://localhost:8080/users";
   const tdmsBaseUrl =
-    process.env.REACT_APP_TDMS_API_BASE_URL || "http://localhost:8000";
+    process.env.REACT_APP_TDMS_API_BASE_URL || "http://localhost:7250";
   const currentUserUrl =
     process.env.REACT_APP_CURRENT_USER_URL ||
     `${tdmsBaseUrl}/api/users/me`;

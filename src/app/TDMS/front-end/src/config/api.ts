@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:7250";
 
 export const AUTH_SERVICE_URL =
   import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500";
