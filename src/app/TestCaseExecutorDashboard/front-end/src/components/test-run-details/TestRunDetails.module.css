@@ -5,7 +5,7 @@
   margin-top: 0rem;
   padding: 0 80px;
   background-color: #f0f0fa;
-  min-height: calc(100vh - 0px);
+  /* min-height: calc(100vh - 0px); */
   width: 100%;
 }
 
@@ -14,7 +14,7 @@
   align-items: flex-start; /* left card stays natural height — does NOT stretch */
   justify-content: space-between;
   gap: 16px;
-  margin-top: 100px;
+  margin-top: 70px;
 }
 
 /* ======================

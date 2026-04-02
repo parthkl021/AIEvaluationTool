@@ -93,8 +93,10 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
         } else {
           // Use fallback values from localStorage if API fails
           const storedUsername = localStorage.getItem("user_name");
-          if (storedUsername) {
-            setUserInfo({ user_name: storedUsername, email: "", role: "User" });
+          const storedRole = localStorage.getItem("role");
+          console.log("Stored username:", storedUsername, "Stored role:", storedRole);
+          if (storedUsername && storedRole) {
+            setUserInfo({ user_name: storedUsername, email: "", role: storedRole });
           }
         }
       } catch (error) {
@@ -106,8 +108,9 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
           return;
         }
         const storedUsername = localStorage.getItem("user_name");
-        if (storedUsername) {
-          setUserInfo({ user_name: storedUsername, email: "", role: "User" });
+        const storedRole = localStorage.getItem("role");
+        if (storedUsername && storedRole) {
+          setUserInfo({ user_name: storedUsername, email: "", role: storedRole });
         }
       } finally {
         setIsLoading(false);

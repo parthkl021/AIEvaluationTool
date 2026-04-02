@@ -1,7 +1,8 @@
 .test-runs-table-wrapper {
   width: 100%;
-  padding: 0 24px;
+  padding: 20px;
   box-sizing: border-box;
+  max-width: 100%;
 }
 
 .table-card {
@@ -9,19 +10,28 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .table-responsive {
+  display: block;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
 }
 
 .test-runs-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin: 0;
+  table-layout: fixed;
 }
 
 .test-runs-table thead {
@@ -33,7 +43,7 @@
 .test-runs-table thead th {
   padding: 16px 16px;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #ffffff;
   text-transform: uppercase;
@@ -42,6 +52,48 @@
   background: linear-gradient(180deg, #2d95fd 0%, #7094bb 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   white-space: nowrap;
+}
+
+/* ===== COLUMN SIZING (FIXED + FLEX) ===== */
+col.col-run-id { width: 60px; }
+/* Cap Run Name so very long ids don't force huge tables */
+col.col-run-name { width: 200px; }
+col.col-target { width: 110px; }
+col.col-started-at { width: 170px; }
+col.col-duration { width: 80px; }
+col.col-score { width: 70px; }
+col.col-evaluation { width: 170px; }
+col.col-status { width: 120px; }
+col.col-domain { width: 110px; }
+col.col-actions { width: 140px; }
+
+th.col-run-name,
+td.col-run-name {
+  width: 200px;
+  max-width: 200px;
+}
+
+.nowrap { white-space: nowrap; }
+
+.cell-center {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.run-name-cell { overflow: hidden;  }
+
+.run-name-text,
+.cell-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Ensure Run Name actually truncates even if the table has extra space */
+.run-name-text {
+  max-width: 200px;
 }
 
 /* ===== SORT TRIGGER ===== */
@@ -83,12 +135,13 @@
   justify-content: flex-start;
   gap: 10px;
   white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 /* ===== FILTER WRAPPER ===== */
 .filterable-header {
   position: relative;
-  min-width: 120px;
+  min-width: 0;
 }
 
 .filter-wrapper {
@@ -166,6 +219,7 @@
   border-bottom: 1px solid #f1f5f9;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .test-runs-table tbody tr.table-row {
@@ -228,7 +282,7 @@
 
 /* ===== ACTIONS ===== */
 .actions-cell {
-  min-width: 140px;
+  min-width: 0;
   position: relative;
   z-index: 5;
 }
@@ -358,31 +412,42 @@
 .pagination-wrapper {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .pagination-container {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start; /* keep arrows aligned with page numbers (scrollbar sits below) */
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .pagination-numbers-wrapper {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 6px;
   flex-wrap: nowrap;
 }
 
 .pagination-numbers-wrapper.scrollable {
-  max-width: 196px;
+  max-width: 240px;
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-behavior: smooth;
-  scrollbar-width: thin;
-  padding-bottom: 2px;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #cbd5e1 transparent; /* Firefox */
+  padding-bottom: 4px; /* space for thin horizontal scrollbar */
+  scrollbar-gutter: stable;
 }
 
 .pagination-numbers-wrapper.scrollable::-webkit-scrollbar {
-  height: 6px;
+  height: 4px; /* Chrome */
+}
+
+.pagination-numbers-wrapper.scrollable::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .pagination-numbers-wrapper.scrollable::-webkit-scrollbar-thumb {
@@ -391,21 +456,27 @@
 }
 
 .pagination-button {
-  display: flex;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
+  min-width: 36px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0;
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
   color: #475569;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  min-width: 0px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  line-height: 1;
+  flex: 0 0 auto;
 }
+
+.pagination-button i { line-height: 1; }
 
 .pagination-button:hover:not(:disabled) {
   background: #f8fafc;
@@ -419,13 +490,16 @@
 }
 
 .pagination-number {
-  display: flex;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   min-width: 36px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
@@ -435,6 +509,7 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
+  line-height: 1;
 }
 
 .pagination-number:hover {
@@ -457,45 +532,22 @@
   color: #ffffff;
 }
 
-.table-footer {
-  text-align: center;
-  padding: 16px 0;
-  color: #64748b;
-  font-size: 12px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
 .report-btn:hover {
   background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
   box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
 }
 
+.table-footer {
+  text-align: center;
+  padding: 10px 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+ 
 .status-cell {
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-
-.table-footer {
-  text-align: center;
-  padding: 16px 0;
-  color: #64748b;
-  font-size: 12px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-.pagination-number.active {
-  background: #2d95fd;
-  border-color: #2d95fd;
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.table-footer {
-  text-align: center;
-  font-size: 13px;
-  color: #94a3b8;
-  padding: 4px 0 8px;
 }
 
 /* ===== TABLE LOADING / EMPTY ===== */
@@ -543,9 +595,9 @@
   .status-badge { font-size: 11px; padding: 3px 8px; }
   .test-runs-table .actions-group .action-icon-button { width: 32px; height: 32px; }
   .test-runs-table .actions-group .action-icon-button i { font-size: 15px; }
-  .pagination-container { flex-wrap: wrap; gap: 4px; }
-  .pagination-button,
-  .pagination-number { width: 32px; height: 32px; min-width: 32px; font-size: 13px; }
+  .pagination-container { gap: 6px; }
+  .pagination-button { width: 32px; min-width: 32px; height: 32px; }
+  .pagination-number { min-width: 32px; height: 32px; padding: 0 8px; font-size: 13px; }
   .header-content { flex-direction: column; gap: 4px; }
   .filter-dropdown { min-width: 160px; }
 }
@@ -554,5 +606,6 @@
   .test-runs-table-wrapper { padding: 0 8px; }
   .test-runs-table thead th,
   .test-runs-table tbody td { padding: 8px 6px; font-size: 11px; }
-  .pagination-number { padding: 0 8px; min-width: 28px; height: 28px; }
+  .pagination-button { width: 28px; min-width: 28px; height: 28px; }
+  .pagination-number { padding: 0 6px; min-width: 28px; height: 28px; font-size: 12px; }
 }
