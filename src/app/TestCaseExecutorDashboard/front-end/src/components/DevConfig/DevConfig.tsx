@@ -1,5 +1,5 @@
 "use client";
-import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { WS_BASE_URL, WS_ENDPOINTS, API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import React, { useEffect, useState } from "react";
 
 /* =========================
@@ -61,7 +61,7 @@ const DevConfigPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await fetch("http://localhost:7000/__dev/config", {
+    await fetch(API_ENDPOINTS.DEV_Config, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(config),

@@ -30,9 +30,16 @@ export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
     GET_TARGET_METADATA: (targetName: string) =>
     `${API_BASE_URL}/targets/${encodeURIComponent(targetName)}/metadata`,
     START_RUN: `${API_BASE_URL}/start-run`,
+    
     CONTINUE_RUN: `${API_BASE_URL}/continue-run`,    
     DEV_Config: `${API_BASE_URL}/__dev/config`,
 }  
 
 
-export const WS_BASE_URL = API_BASE_URL.replace("http", "ws");
+export const WS_BASE_URL = API_BASE_URL.startsWith("https")
+  ? API_BASE_URL.replace("https://", "wss://")
+  : API_BASE_URL.replace("http://", "ws://");
+
+export const WS_ENDPOINTS = {
+  TEST_RUN: `${WS_BASE_URL}/ws/test-run`,
+};
