@@ -3,18 +3,24 @@
 ====================== */
 .container {
   margin-top: 0rem;
-  padding: 0 80px;
+  padding: 0 24px;
   background-color: #f0f0fa;
   /* min-height: calc(100vh - 0px); */
   width: 100%;
+  overflow-x: hidden; /* prevent page-level horizontal scrolling */
+  overflow-y: hidden; /* prevent vertical overflow beyond viewport */
+  height: 100vh; /* Full viewport height */
+  box-sizing: border-box;
 }
 
 .flex {
   display: flex;
-  align-items: flex-start; /* left card stays natural height — does NOT stretch */
+  align-items: stretch; /* Stretch items to fill height */
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 70px;
+  gap: 12px;
+  margin-top: 50px; /* Move timeline much higher to prevent overlap */
+  height: calc(100vh - 200px); /* Leave more gap at bottom */
+  max-height: calc(100vh - 200px); /* Prevent extending beyond viewport */
 }
 
 /* ======================
@@ -23,21 +29,47 @@
 .summaryCard {
   background-color: white;
   border-radius: 12px;
-  padding: 20px;
-  margin: 10px 0 10px;
+  padding: 16px; /* Reduced padding */
+  margin: 8px 0 8px; /* Reduced margin */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
-  width: 300px;
+  width: 280px;
+  max-width: 18vw; /* More aggressive responsive width */
   box-sizing: border-box;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 200px); /* Match exact container height */
+  max-height: calc(100vh - 200px); /* Prevent overflow */
+  overflow: hidden; /* Prevent overflow */
 }
 
 .summaryContent {
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: 4px; /* Reduced from 8px */
+  overflow-y: auto; /* Add scrolling to summary content if needed */
+  scrollbar-width: thin; /* Elegant scrollbar */
+  scrollbar-color: #e2e8f0 transparent; /* Elegant colors */
+}
+
+/* Webkit scrollbar styling */
+.summaryContent::-webkit-scrollbar {
+  width: 4px; /* Thin scrollbar */
+}
+
+.summaryContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.summaryContent::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 2px;
+}
+
+.summaryContent::-webkit-scrollbar-thumb:hover {
+  background-color: #cbd5e1;
 }
 
 .header {
@@ -45,12 +77,12 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 20px;
-  margin-top: 50px;
-  gap: 16px;
+  margin-bottom: 6px; /* Reduced from 12px */
+  margin-top: 10px; /* Reduced from 20px */
+  gap: 8px; /* Reduced from 12px */
   flex-wrap: wrap;
   position: sticky;
-  top: 100px;
+  top: 50px;
 }
 
 .headerRow {
@@ -58,14 +90,16 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: 1.5rem;
-  gap: 16px;
+  margin-bottom: 1rem;
+  gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
+  min-height: 40px; /* Reduced from 60px */
 }
 
 .title {
   margin: 0;
-  font-size: 16px;
+  font-size: clamp(11px, 1.3vw, 13px); /* Responsive font size */
   font-weight: 600;
   color: #1e293b;
   border-bottom: none;
@@ -111,16 +145,17 @@
 .detailsGrid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  padding-top: 1.5rem;
+  gap: 4px; /* Reduced from 6px */
+  padding-top: 4px; /* Reduced from 8px */
   border-top: 1px solid #f1f5f9;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .detailCard {
   background: white;
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 6px; /* Reduced from 8px */
+  padding: 4px; /* Reduced from 8px */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   border: 1px solid #e2e8f0;
@@ -128,27 +163,36 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px; /* Reduced from 50px */
 }
 
 .detailLabel {
-  font-size: 13px;
+  font-size: clamp(7px, 0.9vw, 9px); /* Even smaller responsive font */
   color: #64748b;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px; /* Reduced from 4px */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px; /* Reduced from 0.3px */
 }
 
 .detailValue {
-  font-size: 16px;
+  font-size: clamp(9px, 1.1vw, 11px); /* Smaller responsive font */
   font-weight: 600;
-  margin: 6px 0 0;
+  margin: 2px 0 0; /* Reduced from 6px */
   color: #1e293b;
+  margin-top: 1px; /* Reduced from 2px */
+  word-break: break-word;
+  line-height: 1.1; /* Reduced from 1.2 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -310,6 +354,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: calc(100vh - 200px); /* Match exact container height */
+  max-height: calc(100vh - 200px); /* Prevent overflow */
 }
 
 /* ── BOTTOM white fade — hides last row peek, shown when NOT at bottom ── */
@@ -331,21 +377,11 @@
   opacity: 0;
 }
 
-/* ── TOP white fade — shown when scrolled down (atBottom), sits below sticky thead ── */
-.tableContainer::before {
-  
-}
-
-/* Show top fade when at bottom so scroll-up chevron has a clean background */
-.tableContainer.atBottom::before {
-  opacity: 1;
-}
-
 .tableScroll {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: auto;
-  /* no max-height — height driven by inline style from JS */
+  height: 100%;
 }
 
 /* ======================
@@ -419,9 +455,11 @@
 .tableLayout {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 200px); /* Match exact container height */
+  max-height: calc(100vh - 200px); /* Prevent overflow */
 }
 
 .resultsTable {
@@ -429,7 +467,7 @@
   margin: 0;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 820px;
+  min-width: 80px;
 }
 
 .resultsTable thead th {
@@ -440,9 +478,9 @@
   color: #fafafd;
   font-weight: 600;
   text-align: left;
-  padding: 16px 16px;
+  padding: 16px 8px;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
+  font-size: clamp(11px, 1vw, 13px); /* Smaller responsive font */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -450,17 +488,21 @@
 }
 
 .resultsTable thead th:first-child {
-  width: 23%;
+  width: 18%;
 }
 
 .resultsTable tbody td {
   text-align: left;
-  padding: 8px 16px;
+  padding: 6px 8px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  font-size: 14px;
+  font-size: clamp(11px, 1vw, 13px); /* Smaller responsive font */
   color: #334155;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tableRow {
@@ -499,20 +541,24 @@
 .planCell {
   font-weight: 500;
   border-right: 1px solid #e2e8f0;
-  min-width: 200px;
+  min-width: 160px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .statusCell {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.025em;
-  padding: 4px 14px;
-  border-radius: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  min-width: 92px;
+  font-size: clamp(9px, 0.9vw, 11px); /* Smaller responsive font */
+  min-width: 75px;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
 }
 
@@ -581,12 +627,85 @@
   text-align: center;
 }
 
-/* ======================
-   RESPONSIVE DESIGN
-====================== */
+/* Responsive Design for Zoom Levels - Aggressive for 150% zoom */
 @media (max-width: 1400px) {
-  .detailsGrid {
-    grid-template-columns: repeat(3, 1fr);
+  .summaryCard {
+    width: 250px;
+    max-width: 18vw;
+  }
+  .flex {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .summaryCard {
+    width: 230px;
+    max-width: 16vw;
+    padding: 16px;
+  }
+  .flex {
+    gap: 8px;
+  }
+  .container {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .summaryCard {
+    width: 200px;
+    max-width: 14vw;
+    padding: 12px;
+  }
+  .flex {
+    gap: 6px;
+  }
+  .container {
+    padding: 0 16px;
+  }
+  .resultsTable thead th {
+    padding: 12px 6px;
+    font-size: clamp(10px, 0.9vw, 12px);
+  }
+  .resultsTable tbody td {
+    padding: 4px 6px;
+    font-size: clamp(10px, 0.9vw, 12px);
+  }
+  .planCell {
+    min-width: 140px;
+    max-width: 160px;
+  }
+  .statusCell {
+    min-width: 65px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flex {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .summaryCard {
+    width: 100%;
+    max-width: none;
+    order: 2;
+  }
+  .tableLayout {
+    order: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px;
+  }
+  .summaryCard {
+    padding: 12px;
+  }
+  .tableLayout {
+    padding: 6px;
   }
 }
 

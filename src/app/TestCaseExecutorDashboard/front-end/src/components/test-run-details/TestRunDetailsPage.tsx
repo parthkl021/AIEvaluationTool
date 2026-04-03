@@ -310,12 +310,10 @@ const RunDetails: React.FC = () => {
           <section className={styles.tableSection}>
             <div
               className={`${styles.tableContainer}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
-              style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
             >
               <div
                 ref={tableScrollRef}
                 className={`${styles.tableScroll} table-responsive`}
-                style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
               >
                 <table className={styles.resultsTable}>
                   <thead>
@@ -489,32 +487,7 @@ const RunDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Single chevron below the table */}
-            {showScrollHint && (
-              <div className={styles.scrollChevronRow}>
-                <button
-                  type="button"
-                  className={`${styles.scrollChevron}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
-                  onClick={handleScrollChevronClick}
-                  aria-label={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
-                  title={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
-                >
-                  <span className={styles.scrollChevronIcons} aria-hidden="true">
-                    <i
-                      className={`bi ${
-                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
-                      } ${styles.scrollChevronIcon}`}
-                    />
-                    <i
-                      className={`bi ${
-                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
-                      } ${styles.scrollChevronIcon} ${styles.scrollChevronIcon2}`}
-                    />
-                  </span>
-                </button>
-              </div>
-            )}
-          </section>
+            </section>
         </div>
       </div>
 

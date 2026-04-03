@@ -412,6 +412,8 @@ const ContinueRunPage: React.FC = () => {
                   totalTestCases={totalTestCases}
                   stepsPerTestCase={4}
                   stepNames={["Prepare", "Finding elements", "Execute", "Store"]}
+                  planName={formData.testPlan}
+                  metricName={formData.metric}
                 />
               )}
             </Accordion.Body>
