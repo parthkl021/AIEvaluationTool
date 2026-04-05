@@ -20,7 +20,8 @@ export const clearSession = (): void => {
 };
 
 export const getLoginUrl = (returnUrl?: string): string => {
-  const target = returnUrl || window.location.href;
+  // const target = returnUrl || window.location.href;
+  // const encodedTarget = encodeURIComponent(target);
   return `${AUTH_PAGE_URL}`;
 };
 

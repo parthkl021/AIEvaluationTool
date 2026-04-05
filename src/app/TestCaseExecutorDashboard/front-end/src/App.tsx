@@ -27,15 +27,49 @@ function App() {
         if (values.user_name) localStorage.setItem("user_name", values.user_name);
         if (values.role) localStorage.setItem("role", values.role);
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        setIsAuthenticated(true);
+        setLoading(false);
+        return;
       }
     }
+
     const token = localStorage.getItem("access_token");
     if (!token) {
-      redirectToLogin();
+      setLoading(false);
       return;
     }
-    setIsAuthenticated(true);
-    setLoading(false);
+
+    // Validate token with backend
+    const tdmsBaseUrl =
+      process.env.REACT_APP_TDMS_API_BASE_URL || "http://localhost:7250";
+    const validateToken = async () => {
+      try {
+        const response = await fetch(`${tdmsBaseUrl}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user_name");
+          localStorage.removeItem("role");
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateToken();
   }, []);
 
   if (loading) {

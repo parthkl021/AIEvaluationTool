@@ -469,15 +469,15 @@
   background-color: #ffffff;
 }
 
-.tableRow:hover td {
+.tableRow:hover td:not(.planCell) {
   background-color: #f1f4f7;
 }
 
-.metricRowHover {
+/* .metricRowHover {
   background-color: #f1f4f7 !important;
-}
+} */
 
-.metricRowHover td {
+.metricRowHover td:not(.planCell) {
   background-color: #f1f4f7 !important;
 }
 

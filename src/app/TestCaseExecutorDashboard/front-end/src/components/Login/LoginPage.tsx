@@ -7,10 +7,10 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = () => {
   useEffect(() => {
-    const returnUrl = window.location.search
-      ? `${window.location.origin}/${window.location.search}`
-      : `${window.location.origin}/`;
-    window.location.href = getLoginUrl(returnUrl);
+    // Pass the current origin as return URL so auth service knows where to redirect back
+    const returnUrl = `${window.location.origin}/`;
+    const loginUrl = getLoginUrl(returnUrl);
+    window.location.href = loginUrl;
   }, []);
 
   return (
