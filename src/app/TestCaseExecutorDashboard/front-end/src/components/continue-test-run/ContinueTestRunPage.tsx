@@ -271,7 +271,7 @@ const ContinueRunPage: React.FC = () => {
   return (
     <div className="new-test-run-container">
       <h1>Continue Test Run</h1>
-      <p className="subtitle">Configure and start AI evaluation run</p>
+      <p className="subtitle">Use the existing setup or update plan, metrics, and test cases before running</p>
 
       <div className="accordion-container">
         <Accordion defaultActiveKey={null} className="mb-3">
@@ -320,7 +320,7 @@ const ContinueRunPage: React.FC = () => {
               className={!existingRun ? 'text-muted' : ''}
               onClick={(e) => !existingRun && e.preventDefault()}
             >
-              Configure Test Run {!existingRun && <span className="ms-2">(Fetching run...)</span>}
+              Use Existing or Modify Setup {!existingRun && <span className="ms-2">(Fetching run...)</span>}
             </Accordion.Header>
             <Accordion.Body>
               {existingRun ? (

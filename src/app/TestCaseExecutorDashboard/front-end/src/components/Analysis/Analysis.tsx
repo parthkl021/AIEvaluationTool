@@ -686,7 +686,7 @@ const Analysis: React.FC = () => {
               navigate(`/test-runs/${encodeURIComponent(summary.run_name)}`)
             }
           >
-            Go to /test-runs/{summary.run_name}
+            View Detailed Analysis
           </button>
         </div>
       )}
