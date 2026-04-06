@@ -62,17 +62,39 @@ interface AccordionProps {
 // ─── STATUS ICON ─────────────────────────────────────────────────────────────
 
 const statusIcon = (status: string) => {
+  const size = 16;
+
   if (status === "COMPLETED")
-    return <span style={{ color: "#22c55e", fontWeight: 700 }} title="Completed">✔️</span>;
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-label="Completed" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r="8" fill="#22c55e" />
+        <path d="M4.5 8.5l2.5 2.5 4.5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+
   if (status === "RUNNING")
     return (
-      <span style={{ color: "#2563eb" }} title="Running">
-        <span className="spinner" style={{ display: "inline-block", width: 16, height: 16 }} />
-      </span>
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-label="Running" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r="6.5" stroke="#2563eb" strokeWidth="2" fill="none" strokeDasharray="10 10">
+          <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="0.9s" repeatCount="indefinite" />
+        </circle>
+      </svg>
     );
+
   if (status === "FAILED")
-    return <span style={{ color: "#b91c1c" }} title="Failed">❌</span>;
-  return <span style={{ color: "#94a3b8" }} title="Pending">●</span>;
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-label="Failed" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r="8" fill="#ef4444" />
+        <path d="M5 5l6 6M11 5l-6 6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+
+  // PENDING
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-label="Pending" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.5" stroke="#94a3b8" strokeWidth="2" fill="none" />
+    </svg>
+  );
 };
 
 // ─── NESTED METRIC → STRATEGY ACCORDION ──────────────────────────────────────
