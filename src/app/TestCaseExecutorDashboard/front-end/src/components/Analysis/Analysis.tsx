@@ -11,6 +11,7 @@ interface RunDetail {
   strategy_name?: string;
   status: string;
   score?: number | null;
+  error?: string | null;
 }
 
 interface RunSummary {
@@ -45,6 +46,7 @@ interface AnalysisProgressMessage {
   metricName?: string;
   strategyName?: string;
   detailId?: number;
+  status?: string;
   score?: number | null;
   analysisStartTs?: string;
   analysisEndTs?: string;
@@ -128,7 +130,9 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
   return (
     <div>
       {sortedMetricEntries.map(([metric, metricItems]) => {
-        const metricCompleted = metricItems.filter((d) => d.status === "COMPLETED").length;
+        const metricDone = metricItems.filter(
+          (d) => d.status === "COMPLETED" || d.status === "FAILED"
+        ).length;
         const metricRunning = metricItems.some(
           (d) => d.status === "RUNNING" || d.detail_id === runningDetailId
         );
@@ -137,8 +141,8 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
 
         const metricStatusText =
           isAnalysing && metricRunning
-            ? `${metricCompleted} / ${metricTotal} — running…`
-            : `${metricCompleted} / ${metricTotal} completed`;
+            ? `${metricDone} / ${metricTotal} — running…`
+            : `${metricDone} / ${metricTotal} done`;
 
         return (
           <div
@@ -225,6 +229,21 @@ const MetricStrategyAccordion: React.FC<AccordionProps> = ({
                       <span style={{ minWidth: 60, fontSize: "0.88rem", color: "#0f172a" }}>
                         Score: {typeof tc.score === "number" ? tc.score.toFixed(2) : "—"}
                       </span>
+                      {tc.status === "FAILED" && tc.error && (
+                        <span
+                          title={tc.error}
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "#b91c1c",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: 420,
+                          }}
+                        >
+                          Error: {tc.error}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -290,7 +309,12 @@ const Analysis: React.FC = () => {
 
   // ── Fetch details, but reset all statuses to PENDING if analysis is starting
   const fetchDetails = useCallback(
-    async (targetRunName: string, silent = false, resetStatuses = false) => {
+    async (
+      targetRunName: string,
+      silent = false,
+      resetStatuses = false,
+      preserveLocalAnalysisState = false
+    ) => {
       const res = await fetch(API_ENDPOINTS.GET_TEST_RUN_DETAILS(targetRunName, ""), {
         headers: getAuthHeaders(),
         credentials: "include",
@@ -305,13 +329,31 @@ const Analysis: React.FC = () => {
       }
       const data: TestRunResponse = await res.json();
       setSummary(data.summary);
+      const serverDetails = data.details || [];
+
       // Reset all statuses to PENDING so the UI starts clean,
       // instead of showing stale COMPLETED from a previous run
-      setDetails(
-        resetStatuses
-          ? (data.details || []).map((d) => ({ ...d, status: "PENDING", score: null }))
-          : data.details || []
-      );
+      if (resetStatuses) {
+        setDetails(serverDetails.map((d) => ({ ...d, status: "PENDING", score: null })));
+      } else if (preserveLocalAnalysisState) {
+        setDetails((prev) => {
+          const prevById = new Map(prev.map((d) => [d.detail_id, d]));
+          return serverDetails.map((d) => {
+            const prevRow = prevById.get(d.detail_id);
+            if (!prevRow) return d;
+            const keepStatus =
+              prevRow.status === "COMPLETED" || prevRow.status === "FAILED";
+            return {
+              ...d,
+              status: keepStatus ? prevRow.status : d.status,
+              error: prevRow.error ?? null,
+              score: d.score !== undefined ? d.score : prevRow.score,
+            };
+          });
+        });
+      } else {
+        setDetails(serverDetails);
+      }
       if (!silent) setLoading(false);
     },
     []
@@ -329,6 +371,8 @@ const Analysis: React.FC = () => {
 
     const detailId = toFiniteNumber(payload.detailId);
     if (detailId === null) return;
+
+    const finalStatus = payload.status === "FAILED" ? "FAILED" : "COMPLETED";
 
     setDetails((prev) => {
       const sorted = [...prev].sort((a, b) => a.detail_id - b.detail_id);
@@ -351,14 +395,15 @@ const Analysis: React.FC = () => {
         if (d.detail_id === detailId) {
           return {
             ...d,
-            status: "COMPLETED",
+            status: finalStatus,
             score: payload.score !== undefined ? payload.score : d.score,
+            error: payload.error ?? d.error ?? null,
           };
         }
         if (idx === completedIdx + 1) {
           return { ...d, status: "RUNNING" };
         }
-        if (idx < completedIdx && d.status !== "COMPLETED") {
+        if (idx < completedIdx && (d.status === "PENDING" || d.status === "RUNNING")) {
           return { ...d, status: "COMPLETED" };
         }
         if (idx > completedIdx + 1 && d.status === "RUNNING") {
@@ -481,7 +526,7 @@ const Analysis: React.FC = () => {
             setIsCompleted(true);
             setRunningDetailId(null);
             applyProgress(payload);
-            await fetchDetails(runName, true, false);
+            await fetchDetails(runName, true, false, true);
             if (orderedDetailsRef.current.length > 0) {
               const last = orderedDetailsRef.current.length - 1;
               setCurrentStepIndex(last);

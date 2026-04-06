@@ -2,6 +2,7 @@ from fastapi import BackgroundTasks, HTTPException, logger
 from lib.strategy.strategy_implementor import StrategyImplementor
 from datetime import datetime
 from threading import Lock
+import asyncio
 import os
 import requests
 
@@ -94,10 +95,44 @@ def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _safe_ws_send(message: dict):
+    """
+    Best-effort WebSocket broadcast.
+    Analysis must not crash if a client disconnects or send fails.
+    """
+    try:
+        await ws_manager.send_all(message)
+    except Exception as e:
+        try:
+            logger.error(f"WebSocket send failed: {e}")
+        except Exception:
+            pass
+
+
+async def _run_in_thread(fn, *args, **kwargs):
+    """
+    Run blocking/sync work off the event loop.
+    This also avoids `asyncio.run()` failures inside strategies when we're already in an async context.
+    """
+    to_thread = getattr(asyncio, "to_thread", None)
+    if callable(to_thread):
+        return await to_thread(fn, *args, **kwargs)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, lambda: fn(*args, **kwargs))
+
+
+def _stringify_error(e: Exception) -> str:
+    try:
+        msg = str(e)
+        return msg if msg else e.__class__.__name__
+    except Exception:
+        return "Unknown error"
+
+
 async def run_analyse_background_service(run_name: str, db):
     analysis_start_ts = datetime.now()
     try:
-        await ws_manager.send_all({
+        await _safe_ws_send({
             "type": "ANALYSIS_STARTED",
             "runName": run_name,
             "analysisStartTs": analysis_start_ts.isoformat(),
@@ -117,93 +152,134 @@ async def run_analyse_background_service(run_name: str, db):
                 status_code=404,
                 detail=f"No run details found for run '{run_name}'."
             )
-        ## step 1        
-        # Group all run details by strategy + metric.
-        grouped_run_details = {}
-        for detail in run_details:  
-            strategy_name = db.get_testcase_strategy_name(testcase_name=detail.testcase_name)
-            if not strategy_name:
-                logger.error(f"Strategy not found for testcase '{detail.testcase_name}' in run '{run.run_name}'.")
-                continue
-                    
-            group_key = strategy_name + ":" + detail.metric_name
-            if group_key not in grouped_run_details:
-                grouped_run_details[group_key] = []
-            grouped_run_details[group_key].append(detail)
-        
-        total_items = sum(len(group) for group in grouped_run_details.values())
-        ## step 2
+        total_items = len(run_details)
         _set_analysis_job(run_name, total=total_items)
 
-        strategy = StrategyImplementor()
         completed = 0
+        failed = 0
 
-        for group in grouped_run_details.keys():
-            strategy_name, metric_name = group.split(":")
-            strategy.set_metric_strategy(strategy_name=strategy_name, metric_name=metric_name)
-            for detail in grouped_run_details[group]:
-                if detail.status != "COMPLETED":
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Skipping incomplete run detail with ID {detail.detail_id} for run '{run.run_name}'. Current status: {detail.status}"
+        for detail in sorted(run_details, key=lambda d: getattr(d, "detail_id", 0) or 0):
+            testcase_name = getattr(detail, "testcase_name", None)
+            metric_name = getattr(detail, "metric_name", None)
+            detail_id = getattr(detail, "detail_id", None)
+            conversation_id = getattr(detail, "conversation_id", None)
+            print(f"[LOOP START] detail_id={detail_id} testcase={testcase_name} conversation_id={conversation_id}")
+            # Always attempt to resolve strategy; missing strategy becomes a per-testcase failure.
+            print(f"[PRE-TRY] status={getattr(detail, 'status', None)}  conversation_id={conversation_id}")
+            strategy_name = None
+            try:
+                strategy_name = db.get_testcase_strategy_name(testcase_name=testcase_name)
+            except Exception:
+                strategy_name = None
+
+            status = "COMPLETED"
+            score = None
+            error = None
+            conversation = None
+
+            try:
+                # Validate detail readiness for analysis, but never abort the whole loop.
+                if getattr(detail, "status", None) != "COMPLETED":
+                    raise ValueError(
+                        f"Run detail with ID {detail_id} is not completed. Current status: {getattr(detail, 'status', None)}"
                     )
-                testcase = db.get_testcase_by_name(detail.testcase_name)
+
+                if not testcase_name:
+                    raise ValueError(f"Missing testcase name for detail ID {detail_id}.")
+
+                if not metric_name:
+                    raise ValueError(f"Missing metric name for testcase '{testcase_name}' (detail ID {detail_id}).")
+
+                if not strategy_name:
+                    raise ValueError(f"Strategy not found for testcase '{testcase_name}' (detail ID {detail_id}).")
+
+                testcase = db.get_testcase_by_name(testcase_name)
                 if not testcase:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Testcase '{detail.testcase_name}' not found for run '{run.run_name}'."
-                    )
-                
-                    
-                if not testcase.prompt:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Prompt not found for testcase '{detail.testcase_name}' in run '{run.run_name}'."
-                    )
-                    
-                if not testcase.prompt.user_prompt:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"User prompt not found for testcase '{detail.testcase_name}' in run '{run.run_name}'."
-                    )
-                    
-                conversation = db.get_conversation_by_id(detail.conversation_id)
+                    raise ValueError(f"Testcase '{testcase_name}' not found (detail ID {detail_id}).")
+
+                if not getattr(testcase, "prompt", None) or not getattr(testcase.prompt, "user_prompt", None):
+                    raise ValueError(f"User prompt not found for testcase '{testcase_name}' (detail ID {detail_id}).")
+
+                if not conversation_id:
+                    raise ValueError(f"Conversation ID not found for testcase '{testcase_name}' (detail ID {detail_id}).")
+
+                conversation = db.get_conversation_by_id(conversation_id)
+                print(f"[DEBUG] detail_id={detail_id} testcase={testcase_name} conversation={conversation} agent_response={repr(getattr(conversation, 'agent_response', 'NO_CONV'))}")
+
                 if not conversation:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Conversation with ID '{detail.conversation_id}' not found for run '{run.run_name}'."
+                    raise ValueError(
+                        f"Conversation with ID '{conversation_id}' not found for testcase '{testcase_name}' (detail ID {detail_id})."
                     )
 
                 if not conversation.agent_response:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Agent response not found for conversation ID '{detail.conversation_id}' in run '{run.run_name}'."
-                    )
-                ## models fetching    
-                score, reason = strategy.execute(testcase = testcase, conversation = conversation)
+                    raise ValueError(
+                        f"NO_AGENT_RESPONSE: No agent response recorded for testcase '{testcase_name}' (detail ID: {detail_id})."
+                    )    
+                agent_response = getattr(conversation, "agent_response", None)
+                print(f"Evaluating testcase='{testcase_name}' conversation_id='{conversation_id}' detail_id={detail_id} | agent_response value: {repr(agent_response)}")
                 
-                conversation.evaluation_score = score
+                # Check for agent response immediately after getting conversation
+                if not agent_response or str(agent_response).strip() == "":
+                    print(f"[NO_AGENT_RESPONSE] testcase='{testcase_name}' conversation_id='{conversation_id}' detail_id={detail_id} | agent_response value: {repr(agent_response)}")
+                    raise ValueError(
+                        f"NO_AGENT_RESPONSE: No response received from model for testcase '{testcase_name}' (conversation ID: {conversation_id}, detail ID: {detail_id})."
+                    )
+
+                def _eval_sync():
+                    impl = StrategyImplementor()
+                    impl.set_metric_strategy(strategy_name=strategy_name, metric_name=metric_name)
+                    return impl.execute(testcase=testcase, conversation=conversation)
+
+                raw_score, reason = await _run_in_thread(_eval_sync)
+                score = float(raw_score) if raw_score is not None else None
+                if not reason or str(reason).strip() == "":
+                    raise ValueError(
+                        f"No evaluation reason"
+                    )
+                # Persist evaluation to conversation (best effort)
+                conversation.evaluation_score = raw_score
                 conversation.evaluation_reason = reason
-                conversation.evaluation_ts = datetime.now().isoformat()   
+                conversation.evaluation_ts = datetime.now().isoformat()
                 db.add_or_update_conversation(conversation=conversation, override=True)
+            except Exception as e:
+                status = "FAILED"
+                failed += 1
+                error = _stringify_error(e)
+                # Best-effort: persist failure reason to conversation (if available)
+                try:
+                    if conversation is None and conversation_id:
+                        conversation = db.get_conversation_by_id(conversation_id)
+                    if conversation is not None:
+                        # Set score to 0 when there's an error
+                        conversation.evaluation_score = 0.0
+                        conversation.evaluation_reason = error
+                        conversation.evaluation_ts = datetime.now().isoformat()
+                        db.add_or_update_conversation(conversation=conversation, override=True)
+                except Exception:
+                    pass
+            finally:
                 completed += 1
                 progress_payload = {
                     "type": "ANALYSIS_PROGRESS",
                     "runName": run_name,
                     "current": completed,
                     "total": total_items,
-                    "testcaseName": detail.testcase_name,
-                    "metricName": detail.metric_name,
+                    "testcaseName": testcase_name,
+                    "metricName": metric_name,
                     "strategyName": strategy_name,
-                    "detailId": detail.detail_id,
-                    "score": float(score) if score is not None else None,
+                    "detailId": detail_id,
+                    "status": status,
+                    "score": score,
                 }
+                if error:
+                    progress_payload["error"] = error
+
                 _set_analysis_job(
                     run_name,
                     current=completed,
                     last_update=progress_payload,
                 )
-                await ws_manager.send_all(progress_payload)
+                await _safe_ws_send(progress_payload)
 
         analysis_end_ts = datetime.now()
         duration_seconds = int((analysis_end_ts - analysis_start_ts).total_seconds())
@@ -213,13 +289,17 @@ async def run_analyse_background_service(run_name: str, db):
             analysis_start_ts=analysis_start_ts.isoformat(),
             analysis_end_ts=analysis_end_ts.isoformat(),
             analysis_duration_seconds=duration_seconds,
+            failed=failed,
         )
-        await ws_manager.send_all({
+        await _safe_ws_send({
             "type": "ANALYSIS_FINISHED",
             "runName": run_name,
             "analysisStartTs": analysis_start_ts.isoformat(),
             "analysisEndTs": analysis_end_ts.isoformat(),
             "analysisDurationSeconds": duration_seconds,
+            "current": total_items,
+            "total": total_items,
+            "failed": failed,
         })
     except Exception as e:
         _set_analysis_job(
@@ -228,7 +308,7 @@ async def run_analyse_background_service(run_name: str, db):
             analysis_end_ts=datetime.now().isoformat(),
             error=str(e),
         )
-        await ws_manager.send_all({
+        await _safe_ws_send({
             "type": "ANALYSIS_FAILED",
             "runName": run_name,
             "error": str(e),

@@ -4,7 +4,7 @@
 
 .timelineCard {
   position: sticky;
-  top: 60px;
+  top: 30px;
   background: white;
   z-index: 100;
   padding: 15px;
@@ -42,11 +42,12 @@
   gap: 20px;
   width: 100%;
   overflow: visible;
+  flex-wrap: wrap;
 }
 
 .planBlock {
-  flex: 1;  /* Each plan takes equal width */
-  min-width: 200px;  /* Minimum width to prevent plans from getting too narrow */
+  flex: 1;
+  min-width: 150px;
   position: relative;
   overflow: visible;
 }

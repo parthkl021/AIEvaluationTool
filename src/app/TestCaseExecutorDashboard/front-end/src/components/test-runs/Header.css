@@ -5,7 +5,7 @@
   width: 100%;
   padding: 16px 24px 0px;
   margin-bottom: 2px;
-  margin-top: 20px;
+  margin-top: 4px; /* Further reduced from 8px to save more space */
   background: transparent;
   margin-left: auto;
   margin-right: auto;
@@ -48,14 +48,27 @@
 .header-content {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-left: auto;
-  margin-right: auto;
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: clamp(18px, 3vw, 28px) !important; /* Responsive font size */
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -63,11 +76,14 @@
   letter-spacing: -0.02em;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
+/* Responsive New Test Run button */
+.new-test-run-btn {
+  font-size: clamp(10px, 1.5vw, 14px) !important; /* Smaller responsive font */
+  padding: clamp(4px, 0.8vw, 8px) clamp(8px, 1.5vw, 16px) !important; /* Smaller responsive padding */
+  min-height: clamp(24px, 3.5vw, 36px) !important; /* Smaller responsive height */
+  min-width: clamp(80px, 12vw, 140px) !important; /* Smaller responsive width */
+  border-radius: clamp(4px, 0.8vw, 6px) !important; /* Smaller responsive radius */
+  white-space: nowrap;
 }
 
 .continue-btn {

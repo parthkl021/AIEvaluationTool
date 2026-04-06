@@ -26,22 +26,27 @@
 }
 
 .test-runs-table {
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
+  min-width: 800px; /* Minimum width before horizontal scroll */
   border-collapse: separate;
   border-spacing: 0;
   margin: 0;
-  table-layout: fixed;
+  table-layout: auto; /* Allow flexible column sizing */
 }
 
 .test-runs-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
+  background: linear-gradient(180deg, #2d95fd 0%, #7094bb 100%); /* Full width blue background */
+}
+
+.test-runs-table thead tr {
+  background: linear-gradient(180deg, #2d95fd 0%, #7094bb 100%); /* Full row gradient */
 }
 
 .test-runs-table thead th {
-  padding: 16px 16px;
+  padding: 8px 12px; /* Reduced padding */
   text-align: left;
   font-size: 12px;
   font-weight: 600;
@@ -49,28 +54,45 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #2d95fd 0%, #7094bb 100%);
+  background: transparent; /* Remove individual th background */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   white-space: nowrap;
 }
 
-/* ===== COLUMN SIZING (FIXED + FLEX) ===== */
-col.col-run-id { width: 60px; }
-/* Cap Run Name so very long ids don't force huge tables */
-col.col-run-name { width: 200px; }
-col.col-target { width: 110px; }
-col.col-started-at { width: 170px; }
-col.col-duration { width: 80px; }
-col.col-score { width: 70px; }
-col.col-evaluation { width: 170px; }
-col.col-status { width: 120px; }
-col.col-domain { width: 110px; }
-col.col-actions { width: 140px; }
+/* ===== COLUMN SIZING (RESPONSIVE) ===== */
+col.col-run-id { width: 60px; min-width: 60px; }
+/* Make Run Name responsive */
+col.col-run-name { width: 180px; min-width: 150px; max-width: 250px; }
+col.col-target { width: 100px; min-width: 80px; }
+col.col-started-at { width: 150px; min-width: 130px; }
+col.col-duration { width: 80px; min-width: 70px; }
+col.col-score { width: 70px; min-width: 60px; }
+col.col-evaluation { width: 150px; min-width: 130px; }
+col.col-status { width: 110px; min-width: 90px; }
+col.col-domain { width: 100px; min-width: 80px; }
+col.col-actions { width: 130px; min-width: 120px; }
 
 th.col-run-name,
 td.col-run-name {
-  width: 200px;
-  max-width: 200px;
+  width: 180px;
+  min-width: 150px;
+  max-width: 250px;
+}
+
+/* Add ellipsis for evaluation time and started at to prevent horizontal scroll */
+col.col-started-at,
+col.col-evaluation {
+  max-width: 120px;
+}
+
+th.col-started-at,
+td.col-started-at,
+th.col-evaluation,
+td.col-evaluation {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nowrap { white-space: nowrap; }
@@ -93,7 +115,7 @@ td.col-run-name {
 
 /* Ensure Run Name actually truncates even if the table has extra space */
 .run-name-text {
-  max-width: 200px;
+  max-width: 180px;
 }
 
 /* ===== SORT TRIGGER ===== */
@@ -107,7 +129,7 @@ td.col-run-name {
   gap: 10px;
   font-weight: 600;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12px; /* Match other header font size */
   letter-spacing: 0.05em;
   text-transform: uppercase;
   width: 100%;
@@ -213,7 +235,7 @@ td.col-run-name {
 
 /* ===== TABLE BODY ===== */
 .test-runs-table tbody td {
-  padding: 8px 16px;
+  padding: 8px 12px; /* Reduced padding */
   font-size: 14px;
   color: #334155;
   border-bottom: 1px solid #f1f5f9;
@@ -580,26 +602,77 @@ td.col-run-name {
 }
 
 /* ===== RESPONSIVE ===== */
+/* For 125% zoom and smaller screens */
+@media (max-width: 1200px) {
+  .test-runs-table-wrapper { padding: 0 16px; }
+  .test-runs-table thead th,
+  .test-runs-table tbody td { padding: 12px 8px; font-size: 13px; }
+  .test-runs-table thead th { font-size: 11px; }
+  
+  /* Adjust column widths for smaller screens */
+  col.col-run-name { width: 160px; min-width: 140px; max-width: 200px; }
+  col.col-target { width: 90px; min-width: 70px; }
+  col.col-started-at { width: 140px; min-width: 120px; }
+  col.col-evaluation { width: 140px; min-width: 120px; }
+  col.col-actions { width: 120px; min-width: 110px; }
+  
+  th.col-run-name, td.col-run-name {
+    width: 160px; min-width: 140px; max-width: 200px;
+  }
+  .run-name-text { max-width: 160px; }
+}
+
 @media (max-width: 1024px) {
   .test-runs-table-wrapper { padding: 0 16px; }
   .test-runs-table thead th,
-  .test-runs-table tbody td { padding: 12px; font-size: 13px; }
-  .test-runs-table thead th { font-size: 11px; }
+  .test-runs-table tbody td { padding: 12px 6px; font-size: 12px; }
+  .test-runs-table thead th { font-size: 10px; }
+  
+  /* Further adjust column widths */
+  col.col-run-name { width: 150px; min-width: 130px; max-width: 180px; }
+  col.col-target { width: 80px; min-width: 60px; }
+  col.col-started-at { width: 130px; min-width: 110px; }
+  col.col-evaluation { width: 130px; min-width: 110px; }
+  col.col-actions { width: 110px; min-width: 100px; }
+  
+  th.col-run-name, td.col-run-name {
+    width: 150px; min-width: 130px; max-width: 180px;
+  }
+  .run-name-text { max-width: 150px; }
 }
 
 @media (max-width: 768px) {
   .test-runs-table-wrapper { padding: 0 12px; }
   .table-card { border-radius: 8px; }
   .test-runs-table thead th,
-  .test-runs-table tbody td { padding: 10px 8px; font-size: 12px; }
-  .status-badge { font-size: 11px; padding: 3px 8px; }
-  .test-runs-table .actions-group .action-icon-button { width: 32px; height: 32px; }
-  .test-runs-table .actions-group .action-icon-button i { font-size: 15px; }
-  .pagination-container { gap: 6px; }
-  .pagination-button { width: 32px; min-width: 32px; height: 32px; }
-  .pagination-number { min-width: 32px; height: 32px; padding: 0 8px; font-size: 13px; }
-  .header-content { flex-direction: column; gap: 4px; }
-  .filter-dropdown { min-width: 160px; }
+  .test-runs-table tbody td { padding: 8px 4px; font-size: 11px; }
+  .status-badge { font-size: 10px; padding: 2px 6px; }
+  .test-runs-table .actions-group .action-icon-button { width: 28px; height: 28px; }
+  .test-runs-table .actions-group .action-icon-button i { font-size: 13px; }
+  .pagination-container { gap: 4px; }
+  
+  /* Minimal column widths for mobile */
+  col.col-run-name { width: 120px; min-width: 100px; max-width: 140px; }
+  col.col-target { width: 70px; min-width: 50px; }
+  col.col-started-at { width: 110px; min-width: 90px; }
+  col.col-duration { width: 60px; min-width: 50px; }
+  col.col-score { width: 60px; min-width: 50px; }
+  col.col-evaluation { width: 110px; min-width: 90px; }
+  col.col-status { width: 90px; min-width: 70px; }
+  col.col-domain { width: 70px; min-width: 50px; }
+  col.col-actions { width: 100px; min-width: 90px; }
+  
+  th.col-run-name, td.col-run-name {
+    width: 120px; min-width: 100px; max-width: 140px;
+  }
+  .run-name-text { max-width: 120px; }
+}
+
+@media (max-width: 600px) {
+  .test-runs-table { min-width: 700px; } /* Allow horizontal scroll earlier */
+  .test-runs-table thead th,
+  .test-runs-table tbody td { padding: 6px 2px; font-size: 10px; }
+  .test-runs-table thead th { font-size: 9px; }
 }
 
 @media (max-width: 480px) {

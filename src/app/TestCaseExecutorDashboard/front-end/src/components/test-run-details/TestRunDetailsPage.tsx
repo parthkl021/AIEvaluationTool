@@ -270,12 +270,12 @@ const RunDetails: React.FC = () => {
           <div className={styles.summaryContent}>
             <DetailCard label="Target" value={summary.target ?? "-"} icon="bi-bullseye" />
             <DetailCard label="Domain" value={summary.domain ?? "-"} icon="bi-globe" />
-            <DetailCard
+            {/* <DetailCard
               label="Status"
               value={summary.status}
               status={statusMap(summary.status)}
               icon="bi-activity"
-            />
+            /> */}
             <DetailCard
               label="Started At"
               value={new Date(summary.start_ts).toLocaleString()}
@@ -310,12 +310,10 @@ const RunDetails: React.FC = () => {
           <section className={styles.tableSection}>
             <div
               className={`${styles.tableContainer}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
-              style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
             >
               <div
                 ref={tableScrollRef}
                 className={`${styles.tableScroll} table-responsive`}
-                style={tableContainerHeight ? { height: tableContainerHeight } : undefined}
               >
                 <table className={styles.resultsTable}>
                   <thead>
@@ -489,32 +487,7 @@ const RunDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Single chevron below the table */}
-            {showScrollHint && (
-              <div className={styles.scrollChevronRow}>
-                <button
-                  type="button"
-                  className={`${styles.scrollChevron}${isAtBottom ? ` ${styles.atBottom}` : ""}`}
-                  onClick={handleScrollChevronClick}
-                  aria-label={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
-                  title={isAtBottom ? "Scroll to top" : "Scroll to bottom"}
-                >
-                  <span className={styles.scrollChevronIcons} aria-hidden="true">
-                    <i
-                      className={`bi ${
-                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
-                      } ${styles.scrollChevronIcon}`}
-                    />
-                    <i
-                      className={`bi ${
-                        isAtBottom ? "bi-chevron-double-up" : "bi-chevron-double-down"
-                      } ${styles.scrollChevronIcon} ${styles.scrollChevronIcon2}`}
-                    />
-                  </span>
-                </button>
-              </div>
-            )}
-          </section>
+            </section>
         </div>
       </div>
 

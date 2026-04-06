@@ -236,6 +236,8 @@ def continue_run_with_plan_service(db, data: NewTestRun, background_tasks: Backg
         "runId": run_id,
         "runName": run_name,
         "addedPlan": plan_name,
+        "plan_name":plan_name,
+        "metric_name":metric_name,
         "totalTestCases": len(testcases),
     }
 

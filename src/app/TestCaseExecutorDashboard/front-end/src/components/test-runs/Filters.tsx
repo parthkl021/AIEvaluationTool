@@ -97,26 +97,6 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         ))}
 
       </div> */}
-      <div className="header-content">
-        <div className="header-actions">
-          {/* <AppButton
-            label="Continue"
-            variant="outline-secondary"
-            icon="bi-play-fill"
-            size="md"
-            className="continue-btn"
-          /> */}
-          <AppButton
-            label="New Test Run"
-            variant="primary"
-            icon="bi-plus-lg"
-            size="md"
-            className="new-test-run-btn"
-            onClick={() => navigate(`/create-test-run`)}
-          />
-        </div>
-      </div>
-
     </div>
     
     

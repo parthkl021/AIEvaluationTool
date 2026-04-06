@@ -16,6 +16,7 @@
 
 .detail-label {
   font-weight: 600;
+  font-size: 0.8rem;
   margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
@@ -26,7 +27,7 @@
 }
 
 .detail-value {
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   color: #333;
 }
 

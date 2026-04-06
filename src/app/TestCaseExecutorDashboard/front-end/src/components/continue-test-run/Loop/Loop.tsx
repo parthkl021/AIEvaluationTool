@@ -5,6 +5,8 @@ interface LoopProps {
   totalTestCases: number;
   stepsPerTestCase: number; // 👈 how many steps each TC has
   stepNames?: string[]; // 👈 Names for each step
+  planName?: string;     // 👈 add
+  metricName?: string;   // 👈 add
 }
 
 type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED";
@@ -14,6 +16,8 @@ const Loop: React.FC<LoopProps> = ({
   totalTestCases,
   stepsPerTestCase,
   stepNames: propStepNames,
+  planName,    
+  metricName
 }) => {
   const [currentTestCase, setCurrentTestCase] = useState(0);
   // Track status for each step individually
@@ -147,7 +151,7 @@ const Loop: React.FC<LoopProps> = ({
           borderRadius: '4px',
           fontWeight: 500
         }}>
-          Responsible_AI • Inclusivity
+          {planName} {metricName && `• ${metricName}`}
         </div>
       </div>
       

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import threading
 from datetime import datetime
 
@@ -24,6 +25,8 @@ def is_error_response(response):
         indicator in response[0]["response"].lower() for indicator in error_indicators
     )
 
+with open(interface_manager_config, "r") as f:
+    interface_manager_config_read = json.load(f)
 
 async def step(ws_payload, delay=0.1):
     await ws_manager.send_all(ws_payload)
@@ -67,7 +70,7 @@ async def execute_testcases(
         application_type = APPLICATION_TYPE_MAP[target_obj.target_type]
 
         client = InterfaceManagerClient(
-            base_url="http://localhost:8000",
+            base_url=interface_manager_config_read["base_url"],
             application_type=application_type,
             agent_name=agent_name,
         )
@@ -113,12 +116,14 @@ async def execute_testcases(
                     testcase_name=testcase.name,
                 )
                 rundetail_id = db.add_or_update_testrun_detail(rundetail)
-                run_status = db.get_status_by_run_detail_id(run_detail_id=rundetail_id)
-                if run_status is not None and run_status == "COMPLETED":
-                    print(
-                        f"Run detail for testcase {testcase.name} (ID: {testcase.testcase_id}) is already completed. Skipping execution."
-                    )
-                    continue
+                # For continue runs, always rerun test cases regardless of previous status
+                # Commented out the status check to force rerun
+                # run_status = db.get_status_by_run_detail_id(run_detail_id=rundetail_id)
+                # if run_status is not None and run_status == "COMPLETED":
+                #     print(
+                #         f"Run detail for testcase {testcase.name} (ID: {testcase.testcase_id}) is already completed. Skipping execution."
+                #     )
+                #     continue
 
                 message_to_agent = testcase.prompt.user_prompt or ""
                 if testcase.prompt.system_prompt:

@@ -188,9 +188,14 @@ h1 {
 }
 
 .run-details-accordion .list-group-item {
-  border-left: none;
-  border-right: none;
+  border: none;
+  border-bottom: 1px solid #e9ecef;
   padding: 0.75rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 50px; /* Ensure consistent height */
 }
 
 .run-details-accordion .list-group-item:first-child {
@@ -199,6 +204,25 @@ h1 {
 
 .run-details-accordion .list-group-item:last-child {
   border-bottom: none;
+}
+
+.run-details-accordion .metric-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-details-accordion .test-case-badge {
+  background-color: #007bff;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25em 0.5em;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0; /* Prevent badge from shrinking */
 }
 
 /* Filters Container */

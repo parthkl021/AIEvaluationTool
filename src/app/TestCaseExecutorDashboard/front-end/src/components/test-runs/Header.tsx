@@ -10,8 +10,20 @@ const Header: React.FC = () => {
   return (
     <div className="header-container">  
       <div className="header-content">
-        <img src={testRun} alt="" />
-        <h1 className="page-title">Test Runs</h1>
+        <div className="header-left">
+          <img src={testRun} alt="" />
+          <h1 className="page-title">Test Runs</h1>
+        </div>
+        <div className="header-right">
+          <AppButton
+            label="New Test Run"
+            variant="primary"
+            icon="bi-plus-lg"
+            size="md"
+            className="new-test-run-btn"
+            onClick={() => navigate('/create-test-run')}
+          />
+        </div>
       </div>
     </div>
   );

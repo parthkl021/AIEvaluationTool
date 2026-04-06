@@ -83,26 +83,6 @@ const ReasonCard = ({ score, reason }: { score: number | null; reason: string | 
     <div className="card border-0 bg-light" style={{ borderRadius: '12px' }}>
       <div className="card-body">
         <div className="d-flex align-items-start">
-          <div className="me-3">
-            <div 
-              className="rounded-circle d-flex align-items-center justify-content-center"
-              style={{ 
-                width: '40px', 
-                height: '40px', 
-                backgroundColor: '#6c757d',
-                opacity: 0.1
-              }}
-            >
-              <div 
-                className="rounded-circle"
-                style={{ 
-                  width: '8px', 
-                  height: '8px', 
-                  backgroundColor: '#6c757d'
-                }}
-              />
-            </div>
-          </div>
           <div className="flex-grow-1">
             <h6 className="card-title mb-2 fw-semibold">Evaluation Reason</h6>
             <p className="card-text mb-0 text-secondary" style={{ lineHeight: '1.6' }}>{reason}</p>
