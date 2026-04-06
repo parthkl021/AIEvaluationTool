@@ -448,6 +448,17 @@ const Analysis: React.FC = () => {
       return;
     }
 
+    // Reset all state when component loads/re-loads
+    setIsAnalysing(false);
+    setIsCompleted(false);
+    setCurrentStepIndex(0);
+    setSelectedStepIndex(null);
+    setRunningDetailId(null);
+    setAnalysisCurrent(0);
+    setAnalysisTotal(0);
+    setAnalysisStartTs(null);
+    setAnalysisEndTs(null);
+
     let isMounted = true;
     let ws: WebSocket | null = null;
     let statusTimer: number | null = null;

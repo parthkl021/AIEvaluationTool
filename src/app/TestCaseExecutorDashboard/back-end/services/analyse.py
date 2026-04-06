@@ -181,7 +181,7 @@ async def run_analyse_background_service(run_name: str, db):
                 # Validate detail readiness for analysis, but never abort the whole loop.
                 if getattr(detail, "status", None) != "COMPLETED":
                     raise ValueError(
-                        f"Run detail with ID {detail_id} is not completed. Current status: {getattr(detail, 'status', None)}"
+                        f"Test case has failed"
                     )
 
                 if not testcase_name:

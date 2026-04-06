@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface LoopProps {
   isRunning: boolean;
@@ -20,6 +21,9 @@ const Loop: React.FC<LoopProps> = ({
   metricName
 }) => {
   const [currentTestCase, setCurrentTestCase] = useState(0);
+  const navigate = useNavigate();
+  const { runName } = useParams();
+  const [runCompleted, setRunCompleted] = useState(false);
   // Track status for each step individually
   const [stepStatuses, setStepStatuses] = useState<StepStatus[]>(
     Array(stepsPerTestCase).fill("PENDING")
@@ -86,6 +90,7 @@ const Loop: React.FC<LoopProps> = ({
           setCurrentTestCase(data.current + 1);
           break;
         case "RUN_FINISHED":
+          setRunCompleted(true);
           console.log("🏁 Run completed");
           ws.close();
           break;
@@ -261,6 +266,46 @@ const Loop: React.FC<LoopProps> = ({
           ))}
         </div>
       </div>
+      {runCompleted && (
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "16px",
+            background: "#ECFDF5",
+            border: "1px solid #10B981",
+            borderRadius: "10px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <span
+            style={{
+              color: "#065F46",
+              fontWeight: 600,
+              fontSize: "14px",
+            }}
+          >
+            ✅ Completed successfully
+          </span>
+
+          <button
+            onClick={() => runName && navigate(`/test-runs/${encodeURIComponent(runName)}`)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "6px",
+              border: "none",
+              background: "#10B981",
+              color: "#FFFFFF",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            View Details
+          </button>
+        </div>
+      )}
     </div>
   );
 };

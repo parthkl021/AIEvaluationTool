@@ -196,7 +196,7 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric, o
                       className={styles.scaleItem}
                       style={{ left: `${p * 100}%` }}
                     >
-                      {Math.round((total * p) / 1000)}s
+                      {p === 0 ? "0" : formatDuration(total * p)}
                     </div>
                   ))}
                 </div>
@@ -205,7 +205,7 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric, o
               {index < planNames.length - 1 && (
                 <div
                   className={styles.planConnector}
-                  data-gap={`${(planGaps[index] / 1000).toFixed(2)}s gap`}
+                  data-gap={`${formatDuration(planGaps[index])} gap`}
                 />
               )}
             </React.Fragment>
@@ -217,18 +217,14 @@ const RunTimeline: React.FC<Props> = ({ runName, hoveredMetric, onHoverMetric, o
 };
 
 function formatDuration(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 1) return "0s";
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  if (minutes < 60) return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (hours < 24) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-  return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+  if (!ms || ms < 0) return "-";
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 export default RunTimeline;
