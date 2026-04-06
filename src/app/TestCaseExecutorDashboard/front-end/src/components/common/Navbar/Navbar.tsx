@@ -5,12 +5,21 @@ import logo from '../../../../src/assets/logo/cerai-logo.png';
 import iit from '../../../../src/assets/iitm/iit-logo.png';
 import wsai from '../../../../src/assets/logo/WSAI_Logo.png';
 import { clearSession } from '../../../utils/auth';
-import { AUTH_LOGOUT_URL } from '../../../config/api';
+import { AUTH_LOGOUT_URL, LOGIN_URL } from '../../../config/api';
 
 const Navbar: React.FC = () => {
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(AUTH_LOGOUT_URL, {
+        method: 'GET',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.warn('Logout request failed', error);
+    }
+
     clearSession();
-    window.location.replace(AUTH_LOGOUT_URL);
+    window.location.replace(LOGIN_URL);
   };
 
   return (

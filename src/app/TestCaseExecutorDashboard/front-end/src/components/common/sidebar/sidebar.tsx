@@ -2,8 +2,9 @@ import { Home, Users, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ceraiLogo from "../../../assets/logo/cerai-logo.png";
-import { LOGIN_URL } from "../../../config/api";
+import { LOGIN_URL, AUTH_LOGOUT_URL } from "../../../config/api";
 import "./sidebar.css";
+
 
 interface UserInfo {
   user_name: string;
@@ -52,7 +53,7 @@ const Sidebar = ({ onLogout }: SidebarProps) => {
 
   const handleLogout = async () => {
     try {
-      await fetch(authLoginUrl.replace("/web/login", "/web/logout") , {
+      await fetch(AUTH_LOGOUT_URL, {
         method: "GET",
         credentials: "include",
       });
