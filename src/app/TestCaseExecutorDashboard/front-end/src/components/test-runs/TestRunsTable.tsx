@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./TestRunsTable.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE_URL, API_ENDPOINTS, LOGIN_URL } from "../../config/api";
 import { AllFilters, FilterOption } from "../../types/Filters";
 import { getAuthHeaders, redirectToLogin } from "../../utils/auth";
@@ -51,7 +51,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [openFilterColumn, setOpenFilterColumn] = useState<string | null>(null);
   const filterRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
+  
   // Sort state
   const [sortBy, setSortBy] = useState<"start_ts" | "end_ts">("end_ts");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -88,6 +88,18 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     { key: "domain", label: "Domain", filterable: true, filterType: "domain" },
     { key: "actions", label: "Actions", filterable: false },
   ];
+
+  const startAnalysis = async (mode: string, runName: string) => {
+    
+    const url = API_ENDPOINTS.ANALYSE_RUN(runName, mode);
+    console.log("Starting analysis with URL:", url, "mode:", mode);
+    await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    navigate(`/analyse/${encodeURIComponent(runName)}?mode=${mode}`);
+  };
 
   useEffect(() => {
     setFiltersLoading(true);
@@ -432,16 +444,22 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           className="action-icon-button action-analyse"
                           data-tooltip="Analyse"
                           onClick={() => {
-                            if (typeof run.average_score === "number") {
-                              const confirmReanalyse = window.confirm(
-                                "This run already has a score. Do you want to reanalyse?"
-                              );
+  if (typeof run.average_score === "number") {
+    const choice = window.prompt(
+      "1 → Retry Failed\n2 → Rerun Whole"
+    );
 
-                              if (!confirmReanalyse) return;
-                            }
-
-                            navigate(`/analyse/${encodeURIComponent(run.run_name)}`);
-                          }}
+    if (choice === "1") {
+      startAnalysis("retry_failed", run.run_name);
+    } else if (choice === "2") {
+      startAnalysis("rerun_all", run.run_name);
+    } else {
+      return;
+    }
+  } else {
+    startAnalysis("rerun_all", run.run_name);
+  }
+}}
                           title="Analyse"
                           aria-label={`Analyse ${run.run_name}`}
                         >

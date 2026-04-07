@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { API_ENDPOINTS, WS_BASE_URL } from "../../config/api";
 import { getAuthHeaders, redirectToLogin } from "../../utils/auth";
 import styles from "./Analysis.module.css";
@@ -60,6 +60,8 @@ interface AccordionProps {
 }
 
 // ─── STATUS ICON ─────────────────────────────────────────────────────────────
+
+
 
 const statusIcon = (status: string) => {
   const size = 16;
@@ -305,7 +307,9 @@ const formatDuration = (start: string, end: string | null): string => {
 const Analysis: React.FC = () => {
   const { runName } = useParams<{ runName: string }>();
   const navigate = useNavigate();
-
+  const [searchParams] = useSearchParams();                    // ← ADD THIS
+  const mode = searchParams.get("mode") ?? "rerun_all";       // ← ADD THIS
+  
   const [loading, setLoading] = useState(true);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -448,17 +452,6 @@ const Analysis: React.FC = () => {
       return;
     }
 
-    // Reset all state when component loads/re-loads
-    setIsAnalysing(false);
-    setIsCompleted(false);
-    setCurrentStepIndex(0);
-    setSelectedStepIndex(null);
-    setRunningDetailId(null);
-    setAnalysisCurrent(0);
-    setAnalysisTotal(0);
-    setAnalysisStartTs(null);
-    setAnalysisEndTs(null);
-
     let isMounted = true;
     let ws: WebSocket | null = null;
     let statusTimer: number | null = null;
@@ -493,7 +486,7 @@ const Analysis: React.FC = () => {
         await fetchDetails(runName, false, true);
         if (!isMounted) return;
 
-        const analyseRes = await fetch(API_ENDPOINTS.ANALYSE_RUN(runName), {
+        const analyseRes = await fetch(API_ENDPOINTS.ANALYSE_RUN(runName, mode), {
           headers: getAuthHeaders(),
           credentials: "include",
         });
