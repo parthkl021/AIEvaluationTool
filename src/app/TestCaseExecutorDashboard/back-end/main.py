@@ -41,6 +41,7 @@ from apis.testruns import router as testruns_router
 from apis.filters import router as filters_router
 from apis.analyse import router as analyse_router
 from apis.conversations import router as conversations_router
+from apis.report import router as report_router
 
 from utils.port import check_service, ensure_interface_manager_port_running, stop_interface_manager, watch_chrome_and_kill_im, watch_im_process
 
@@ -112,7 +113,7 @@ app.include_router(testruns_router)
 app.include_router(filters_router)
 app.include_router(analyse_router)
 app.include_router(conversations_router)
-
+app.include_router(report_router)
 
 def load_config():
     with open(config_path , "r") as f:

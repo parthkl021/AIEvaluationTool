@@ -32,6 +32,8 @@ export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
     GET_TARGET_METADATA: (targetName: string) =>
     `${API_BASE_URL}/targets/${encodeURIComponent(targetName)}/metadata`,
     START_RUN: `${API_BASE_URL}/start-run`,
+    DOWNLOAD_REPORT_NEW: (runName: string) =>
+  `${API_BASE_URL}/report/${encodeURIComponent(runName)}`,
     
     CONTINUE_RUN: `${API_BASE_URL}/continue-run`,    
     DEV_Config: `${API_BASE_URL}/__dev/config`,

@@ -471,8 +471,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           data-tooltip="Report"
                           onClick={() => {
                             const link = document.createElement("a");
-                            link.href = API_ENDPOINTS.DOWNLOAD_REPORT(run.run_name);
-                            link.setAttribute("download", `${run.run_name}-evaluation.xlsx`);
+                            link.href = API_ENDPOINTS.DOWNLOAD_REPORT_NEW(run.run_name);
+                            link.setAttribute(
+                              "download",
+                              `${run.run_name}-evaluation.pdf`
+                            );
+
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
