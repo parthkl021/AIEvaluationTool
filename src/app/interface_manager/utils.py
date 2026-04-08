@@ -60,14 +60,25 @@ class DriverManager:
         # to turn off headless mode - remove the below line or comment it out.
         if mode == "True":
             opts.add_argument("--headless")
-        opts.add_argument(f"user-data-dir={self.profile_folder_path}")
         opts.add_experimental_option("excludeSwitches", ["enable-logging"])
 
+        cfg = load_config()
+        selenium_mode = str(cfg.get("selenium_mode", "local")).lower()
+        remote_url = cfg.get("selenium_remote_url", "http://selenium-browser:4444/wd/hub")
+
         try:
-            # service = Service(ChromeDriverManager().install())
-            # self.driver = webdriver.Chrome(service=service, options=opts)
-            # @bugfix: Use the below line to load driver faster -- Balayogi 12.01.2026
-            self.driver = webdriver.Chrome(options=opts)
+            if selenium_mode == "remote":
+                logger.info(f"Using Remote WebDriver at {remote_url}")
+                opts.add_argument("--user-data-dir=/home/seluser/chrome-data")
+                self.driver = webdriver.Remote(
+                    command_executor=remote_url,
+                    options=opts
+                )
+            else:
+                opts.add_argument(f"user-data-dir={self.profile_folder_path}")
+                logger.info("Using local Chrome WebDriver")
+                self.driver = webdriver.Chrome(options=opts)
+
             self.driver.get(url)
             logger.info(f"Driver ready for {app_name}")
             return self.driver
@@ -75,6 +86,19 @@ class DriverManager:
             logger.error(f"Failed to start Chrome for {app_name}: {e}")
             self.driver = None
             raise
+
+        # try:
+        #     # service = Service(ChromeDriverManager().install())
+        #     # self.driver = webdriver.Chrome(service=service, options=opts)
+        #     # @bugfix: Use the below line to load driver faster -- Balayogi 12.01.2026
+        #     self.driver = webdriver.Chrome(options=opts)
+        #     self.driver.get(url)
+        #     logger.info(f"Driver ready for {app_name}")
+        #     return self.driver
+        # except WebDriverException as e:
+        #     logger.error(f"Failed to start Chrome for {app_name}: {e}")
+        #     self.driver = None
+        #     raise
 
     def _is_alive(self) -> bool:
         """Check if the cached driver is still valid."""
@@ -364,6 +388,7 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
     app_cfg = load_xpaths()["applications"][app_name.lower()]
     chat_cfg = app_cfg["ChatPage"]
     entity_name = cfg.get("agent_name")
+    contact_selection = chat_cfg.get("contact_selection_xpath")
 
     try:
         search_input_xpath = chat_cfg.get("contact_search_element") or chat_cfg.get("model_name_entry_element")
@@ -374,9 +399,14 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
         search_box = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, search_input_xpath))
         )
+        search_box.click()
         search_box.clear()
         search_box.send_keys(entity_name)
-        search_box.send_keys(Keys.RETURN)
+
+        contact_select = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, contact_selection))
+        )
+        contact_select.click()
 
         logger.info(f"{app_name}: '{entity_name}' search successful")
         return True
