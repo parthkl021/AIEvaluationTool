@@ -8,7 +8,10 @@ class TestRunResponse(BaseModel):
     status: str
     start_ts: str
     end_ts: Optional[str]
+    evaluation_ts: Optional[str]
     domain: Optional[str] 
+    duration_ms: Optional[int] = None
+    average_score: Optional[float] = None
 
 class TestRunDetailsResponse(BaseModel):
     run_name: str
@@ -48,7 +51,7 @@ class RunEvaluationSummaryResponse(BaseModel):
     evaluations: List[EvaluationItemResponse]
 
 class NewTestRun(BaseModel):
-    target: str
+    target: Optional[str] = None  # 👈 optional now
     testPlan: str          # ✅ NAME, not ID
     testCaseId: Optional[str] = None
     metric: str            # ✅ NAME

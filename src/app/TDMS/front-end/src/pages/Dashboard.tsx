@@ -7,6 +7,7 @@ import { MoreVertical, FileText, Target, Globe, Layers, Languages, MessageSquare
 import { API_ENDPOINTS } from "@/config/api";
 import { useToast } from "@/hooks/use-toast";
 import { canViewHistory, canViewActivity } from "@/utils/permissions";
+import { getValidAccessToken } from "@/utils/auth";
 
 // Menu options will be filtered based on user role
 const MENU_OPTIONS = [
@@ -77,8 +78,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-        if (!token) return;
+        const token = await getValidAccessToken(API_ENDPOINTS.REFRESH);
+        if (!token) {
+          navigate("/");
+          return;
+        }
 
         const response = await fetch(API_ENDPOINTS.CURRENT_USER, {
           headers: {
@@ -98,16 +102,18 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
+        const token = await getValidAccessToken(API_ENDPOINTS.REFRESH);
+        if (!token) {
+          navigate("/");
+          return;
         }
 
-        const response = await fetch(API_ENDPOINTS.DASHBOARD, { headers });
+        const response = await fetch(API_ENDPOINTS.DASHBOARD, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         const data: DashboardStats = await response.json();
 
         if (response.ok) {
@@ -124,6 +130,11 @@ const Dashboard = () => {
             { title: "Metrics", count: data.metrics, icon: BarChart3, onClick: () => navigate("/metrics") },
           ]);
         } else {
+          if (response.status === 401) {
+            navigate("/");
+            return;
+          }
+
           toast({
             title: "Error",
             description: "Failed to load dashboard data",

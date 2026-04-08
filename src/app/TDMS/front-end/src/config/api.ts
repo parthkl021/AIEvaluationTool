@@ -1,10 +1,18 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8100";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:7250";
+
+export const AUTH_SERVICE_URL =
+  import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:7500";
+
+// Auth endpoints
+export const AUTH_PAGE_URL = `${AUTH_SERVICE_URL}/web/login`;
 
 // API endpoints
 export const API_ENDPOINTS = {
-  LOGIN: `${API_BASE_URL}/login`,
+  LOGIN: `${AUTH_SERVICE_URL}/login`,
+  LOGOUT: `${AUTH_SERVICE_URL}/logout`,
+  REFRESH: `${AUTH_SERVICE_URL}/refresh`,
   DASHBOARD: `${API_BASE_URL}/api/dashboard`,
   TEST_CASES: `${API_BASE_URL}/api/testcases`,
   TEST_CASE_BY_ID: (testcase_id: number) =>

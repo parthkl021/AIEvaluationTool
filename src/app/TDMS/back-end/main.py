@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from api.v1.endpoints import (
-    auth,
     dashboard,
     #     domain,
     #     language,
@@ -89,10 +88,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# app.add_middleware(AuthMiddleware)
+app.add_middleware(AuthMiddleware)
 
 
-app.include_router(auth.auth_router, tags=["Authentication"])
+@app.get("/", tags=["Health"])
+async def root():
+    return {
+        "status": "ok",
+        "service": "AIEvaluationTool",
+    }
+
+
 app.include_router(dashboard.dashboard_router, tags=["Dashboard"])
 # app.include_router(testCase.testcase_router, tags=["Test Cases"])
 # app.include_router(response.response_router, tags=["Responses"])
@@ -115,4 +121,4 @@ app.include_router(metric.metric_router, tags=["Metric"])
 app.include_router(testplan_v2.testplan_router, tags=["TestPlan_v2"])
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8100, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=7250, reload=True)

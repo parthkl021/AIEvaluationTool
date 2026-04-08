@@ -1536,6 +1536,28 @@ class DB:
             result = session.execute(sql).scalars().first()
             return result is not None
 
+    # def is_testcase_in_testplan(self, test_case_id: int, plan_name: str) -> bool:
+    #     with self.Session() as session:
+
+    #         testcase = session.query(TestCases).filter_by(
+    #             testcase_id=test_case_id
+    #         ).first()
+
+    #         if not testcase:
+    #             return False
+
+    #         testplan = session.query(TestPlans).filter_by(
+    #             plan_name=plan_name
+    #         ).first()
+
+    #         if not testplan:
+    #             return False
+
+    #         return any(
+    #             metric in testplan.metrics
+    #             for metric in testcase.metrics
+    #         )
+    
     def get_testcases_by_metric(self, metric_name:str, n:int = 0, lang_names:Optional[List[str]] = None, domain_name:Optional[str] = None) -> List[TestCase]:
         """
         Fetches test cases based on the metric name, language names, and domain name.
