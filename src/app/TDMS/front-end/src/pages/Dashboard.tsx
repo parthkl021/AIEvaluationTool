@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from "@/components/Sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MoreVertical, FileText, Target, Globe, Layers, Languages, MessageSquare, PenTool, Scale, ClipboardList, BarChart3, Users } from "lucide-react";
+import { MoreVertical, FileText, Target, Globe, Layers, Languages, MessageSquare, PenTool, Scale, ClipboardList, BarChart3, Users, Upload, Loader } from "lucide-react";
 import { API_ENDPOINTS } from "@/config/api";
 import { useToast } from "@/hooks/use-toast";
 import { canViewHistory, canViewActivity } from "@/utils/permissions";
@@ -74,6 +74,10 @@ const Dashboard = () => {
   const [historyActivities, setHistoryActivities] = useState<Activity[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [importerDialogOpen, setImporterDialogOpen] = useState(false);
+  const [importerLoading, setImporterLoading] = useState(false);
+  const [importerStatus, setImporterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [importerMessage, setImporterMessage] = useState("");
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -249,6 +253,49 @@ const Dashboard = () => {
     }
   };
 
+  const runImporter = async () => {
+    setImporterLoading(true);
+    setImporterStatus("loading");
+    setImporterMessage("Running importer... This may take a few minutes.");
+    setImporterDialogOpen(true);
+
+    try {
+      const token = await getValidAccessToken(API_ENDPOINTS.REFRESH);
+      if (!token) {
+        setImporterStatus("error");
+        setImporterMessage("Authentication failed");
+        return;
+      }
+
+      const response = await fetch(API_ENDPOINTS.IMPORTER_RUN, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        setImporterStatus("success");
+        setImporterMessage("Data imported successfully! The database has been updated with all the test data.");
+        // Refresh dashboard stats after successful import
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setImporterStatus("error");
+        setImporterMessage(data.message || "Failed to import data. Please check the server logs.");
+      }
+    } catch (error) {
+      setImporterStatus("error");
+      setImporterMessage(`Error: ${error instanceof Error ? error.message : "An unexpected error occurred"}`);
+    } finally {
+      setImporterLoading(false);
+    }
+  };
+
   const statCardHandlers = (stat: typeof stats[0]) => ({
     open: () => stat.onClick && stat.onClick(),
     history: () => fetchHistory(stat.title),
@@ -325,6 +372,25 @@ const Dashboard = () => {
             </div>
           </div>
         </main>
+
+        {/* Importer Button - Fixed in Bottom Right */}
+        <button
+          onClick={runImporter}
+          disabled={importerLoading}
+          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 z-30"
+        >
+          {importerLoading ? (
+            <>
+              <Loader className="w-5 h-5 animate-spin" />
+              <span>Importing...</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-5 h-5" />
+              <span>Import Data</span>
+            </>
+          )}
+        </button>
       </div>
 
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
@@ -373,6 +439,89 @@ const Dashboard = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Importer Dialog */}
+      <Dialog open={importerDialogOpen} onOpenChange={setImporterDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {importerStatus === "loading" && "Importing Data..."}
+              {importerStatus === "success" && "Import Successful"}
+              {importerStatus === "error" && "Import Failed"}
+              {importerStatus === "idle" && "Confirm Import"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            {importerStatus === "loading" && (
+              <div className="flex flex-col items-center gap-4">
+                <Loader className="w-12 h-12 text-blue-600 animate-spin" />
+                <p className="text-muted-foreground">{importerMessage}</p>
+              </div>
+            )}
+
+            {importerStatus === "success" && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <span className="text-green-600 text-2xl">✓</span>
+                </div>
+                <p className="text-foreground font-medium">{importerMessage}</p>
+                <p className="text-sm text-muted-foreground">The page will refresh automatically.</p>
+              </div>
+            )}
+
+            {importerStatus === "error" && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <span className="text-red-600 text-2xl">✕</span>
+                </div>
+                <p className="text-foreground font-medium">{importerMessage}</p>
+              </div>
+            )}
+
+            {importerStatus === "idle" && (
+              <div className="flex flex-col items-center gap-4">
+                <Upload className="w-12 h-12 text-blue-600" />
+                <p className="text-foreground">
+                  This will import all test data into the database. Continue?
+                </p>
+              </div>
+            )}
+          </div>
+
+          {importerStatus === "idle" && (
+            <div className="flex gap-4 justify-end pt-4">
+              <button
+                onClick={() => setImporterDialogOpen(false)}
+                className="px-4 py-2 border rounded-md hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={runImporter}
+                disabled={importerLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400"
+              >
+                Import
+              </button>
+            </div>
+          )}
+
+          {(importerStatus === "error" || importerStatus === "success") && (
+            <div className="flex gap-4 justify-end pt-4">
+              <button
+                onClick={() => {
+                  setImporterDialogOpen(false);
+                  setImporterStatus("idle");
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Close
+              </button>
             </div>
           )}
         </DialogContent>

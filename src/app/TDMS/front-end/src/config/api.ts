@@ -193,6 +193,8 @@ export const API_ENDPOINTS = {
   TESTPLAN_DELETE_V2: (plan_id: number) =>
     `${API_BASE_URL}/api/v2/testplans/delete/${plan_id}`,
   TESTPLAN_METRICS_ALL: `${API_BASE_URL}/api/v2/testplans/metrics/all`,
+
+  IMPORTER_RUN: `${API_BASE_URL}/api/importer/run`,
 };
 
 
