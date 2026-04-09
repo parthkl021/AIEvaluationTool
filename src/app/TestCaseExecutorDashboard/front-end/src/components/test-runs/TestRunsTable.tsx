@@ -503,12 +503,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           className="action-icon-button action-analyse"
                           data-tooltip="Analyse"
                           onClick={() => {
-  if (typeof run.average_score === "number") {
-    setAnalyseModal({ runName: run.run_name });
-  } else {
-    startAnalysis("rerun_all", run.run_name);
-  }
-}}
+                            if (typeof run.average_score === "number") {
+                              setAnalyseModal({ runName: run.run_name });
+                            } else {
+                              startAnalysis("rerun_all", run.run_name);
+                            }
+                          }}
                           title="Analyse"
                           aria-label={`Analyse ${run.run_name}`}
                         >
