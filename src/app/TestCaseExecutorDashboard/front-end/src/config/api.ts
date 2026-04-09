@@ -15,6 +15,8 @@ export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
     `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}${
       mode ? `?mode=${mode}` : ""
     }`,
+    ANALYSE_DETAILS: (runName: string, mode: string) =>
+    `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}/details?mode=${mode}`,
     ANALYSE_RUN_STATUS: (runName: string) =>
     `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}/status`,
     DOWNLOAD_REPORT: (runName: string) =>

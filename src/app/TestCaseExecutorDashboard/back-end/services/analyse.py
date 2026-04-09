@@ -75,6 +75,23 @@ def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks, 
         run_details = [
             rd for rd in run_details if rd.status == "COMPLETED"
         ]
+
+        if mode == "retry_failed":
+            print("Running only failed test cases...")
+            filtered_run_details = []
+            for detail in run_details:
+                conversation = db.get_conversation_by_id(detail.conversation_id)
+                if not conversation:
+                    continue
+                reason = conversation.evaluation_reason or ""
+                if reason.strip() == "":
+                    filtered_run_details.append(detail)
+            print(filtered_run_details)
+            print(f"Retry Failed: {len(filtered_run_details)} / {len(run_details)} selected")
+            run_details = filtered_run_details
+            if not run_details:
+                print("No failed test cases to retry")
+                return
         total_items = len(run_details) if run_details else 0
         _set_analysis_job(
             run_name,

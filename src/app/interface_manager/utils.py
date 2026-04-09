@@ -388,7 +388,7 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
     app_cfg = load_xpaths()["applications"][app_name.lower()]
     chat_cfg = app_cfg["ChatPage"]
     entity_name = cfg.get("agent_name")
-    contact_selection = chat_cfg.get("contact_selection_xpath")
+    contact_selection = "//span[@title='" + entity_name + "']"
 
     try:
         search_input_xpath = chat_cfg.get("contact_search_element") or chat_cfg.get("model_name_entry_element")
@@ -399,9 +399,10 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
         search_box = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, search_input_xpath))
         )
-        search_box.click()
         search_box.clear()
         search_box.send_keys(entity_name)
+        
+        time.sleep(5)
 
         contact_select = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, contact_selection))

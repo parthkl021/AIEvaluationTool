@@ -340,7 +340,7 @@ const Analysis: React.FC = () => {
       keepOnlyCompleted = false,
       filterToProcessed = false
     ) => {
-      const res = await fetch(API_ENDPOINTS.GET_TEST_RUN_DETAILS(targetRunName, ""), {
+      const res = await fetch(API_ENDPOINTS.ANALYSE_DETAILS(targetRunName, mode), {
         headers: getAuthHeaders(),
         credentials: "include",
       });
@@ -377,7 +377,7 @@ const Analysis: React.FC = () => {
 
       if (!silent) setLoading(false);
     },
-    []
+    [mode]
   );
 
   // ── Apply a WS progress message ──────────────────────────────────────────
