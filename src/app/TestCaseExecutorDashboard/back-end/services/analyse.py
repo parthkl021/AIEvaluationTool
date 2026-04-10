@@ -49,7 +49,8 @@ def get_analyse_status_service(run_name: str):
         return {"run_name": run_name, **state}
 
 
-def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks):
+def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks, mode: str = "rerun_all"):
+    print(f"[SERVICE] Starting analysis service for run '{run_name}' with mode '{mode}'")
     try:
         run = db.get_run_by_name(run_name=run_name)
         if not run:
@@ -71,6 +72,9 @@ def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks):
                 return {"run_name": run_name, "status": "running"}
 
         run_details = db.get_all_run_details_by_run_name(run_name=run.run_name)
+        run_details = [
+            rd for rd in run_details if rd.status == "COMPLETED"
+        ]
         total_items = len(run_details) if run_details else 0
         _set_analysis_job(
             run_name,
@@ -83,7 +87,7 @@ def start_analyse_service(run_name: str, db, background_tasks: BackgroundTasks):
             last_update=None,
         )
 
-        background_tasks.add_task(run_analyse_background_service, run_name, db)
+        background_tasks.add_task(run_analyse_background_service, run_name, db, mode)
         return {
             "run_name": run_name,
             "status": "started",
@@ -129,7 +133,7 @@ def _stringify_error(e: Exception) -> str:
         return "Unknown error"
 
 
-async def run_analyse_background_service(run_name: str, db):
+async def run_analyse_background_service(run_name: str, db, mode: str = "rerun_all"):
     analysis_start_ts = datetime.now()
     try:
         await _safe_ws_send({
@@ -146,6 +150,25 @@ async def run_analyse_background_service(run_name: str, db):
             )
         
         run_details = db.get_all_run_details_by_run_name(run_name=run.run_name)
+        run_details = [
+            rd for rd in run_details if rd.status == "COMPLETED"
+        ]
+        print("mode:", mode)
+        if mode == "retry_failed":
+            print("Running only failed test cases...")
+            filtered_run_details = []
+            for detail in run_details:
+                conversation = db.get_conversation_by_id(detail.conversation_id)
+                if not conversation:
+                    continue
+                reason = conversation.evaluation_reason or ""
+                if reason.strip() == "":
+                    filtered_run_details.append(detail)
+            print(f"Retry Failed: {len(filtered_run_details)} / {len(run_details)} selected")
+            run_details = filtered_run_details
+            if not run_details:
+                print("No failed test cases to retry")
+                return        
         if not run_details:
             print(f"No run details found for run '{run_name}'.")
             raise HTTPException(
@@ -181,7 +204,7 @@ async def run_analyse_background_service(run_name: str, db):
                 # Validate detail readiness for analysis, but never abort the whole loop.
                 if getattr(detail, "status", None) != "COMPLETED":
                     raise ValueError(
-                        f"Run detail with ID {detail_id} is not completed. Current status: {getattr(detail, 'status', None)}"
+                        f"Test case has failed"
                     )
 
                 if not testcase_name:
@@ -234,7 +257,7 @@ async def run_analyse_background_service(run_name: str, db):
                 score = float(raw_score) if raw_score is not None else None
                 if not reason or str(reason).strip() == "":
                     raise ValueError(
-                        f"No evaluation reason"
+                        f"Failed to analyse"
                     )
                 # Persist evaluation to conversation (best effort)
                 conversation.evaluation_score = raw_score
@@ -252,7 +275,7 @@ async def run_analyse_background_service(run_name: str, db):
                     if conversation is not None:
                         # Set score to 0 when there's an error
                         conversation.evaluation_score = 0.0
-                        conversation.evaluation_reason = error
+                        conversation.evaluation_reason = ""
                         conversation.evaluation_ts = datetime.now().isoformat()
                         db.add_or_update_conversation(conversation=conversation, override=True)
                 except Exception:

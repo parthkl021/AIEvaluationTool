@@ -1,0 +1,54 @@
+{
+    "Conversational_Quality": {
+        "ROUGE": {
+            "Testcases": {
+                "P85": 0.0,
+                "P76": 0.0
+            },
+            "Evaluation_Reason": {
+                "P85": "Could not get a proper reasoning for the score.",
+                "P76": "Could not get a proper reasoning for the score."
+            },
+            "metric_summary": "The ROUGE metric's inability to provide clear reasoning for its score suggests a lack of meaningful overlap or alignment between system outputs and reference texts, indicating potential weaknesses in either the system's generation capabilities or the quality of reference content. This limits the metric's utility in diagnosing specific strengths or areas for improvement.",
+            "metric_score": 0.0,
+            "plan_summary": "The plan demonstrates strengths in generating fluent and structurally coherent responses but shows limitations in semantic depth and lexical richness, as indicated by the BLEU and Fluency_Score metrics. Weaknesses include unclear alignment with reference content (ROUGE) and insufficient assessment of vocabulary diversity (Lexical_Diversity), which hinder comprehensive evaluation. These patterns suggest the system prioritizes surface-level quality over contextual relevance, with practical implications for real-world effectiveness requiring further refinement.",
+            "run_summary": ""
+        },
+        "Lexical_Diversity": {
+            "Testcases": {
+                "P46": 0.847745664739884
+            },
+            "Evaluation_Reason": {
+                "P46": "Could not get a proper reasoning for the score."
+            },
+            "metric_summary": "The Lexical_Diversity metric lacks sufficient reasoning to assess its implications, making it difficult to determine whether the system demonstrates a rich or limited vocabulary. This absence of context obscures potential strengths in linguistic variety or weaknesses in repetitive language use, hindering actionable insights for improvement.",
+            "metric_score": 0.848,
+            "plan_summary": "The plan demonstrates strengths in generating fluent and structurally coherent responses but shows limitations in semantic depth and lexical richness, as indicated by the BLEU and Fluency_Score metrics. Weaknesses include unclear alignment with reference content (ROUGE) and insufficient assessment of vocabulary diversity (Lexical_Diversity), which hinder comprehensive evaluation. These patterns suggest the system prioritizes surface-level quality over contextual relevance, with practical implications for real-world effectiveness requiring further refinement.",
+            "run_summary": ""
+        },
+        "BLEU": {
+            "Testcases": {
+                "P73": 0.0
+            },
+            "Evaluation_Reason": {
+                "P73": "Could not get a proper reasoning for the score."
+            },
+            "metric_summary": "The BLEU metric assesses system performance by comparing n-gram overlap between generated outputs and reference texts, highlighting strengths in fluency and structural accuracy but often overlooking semantic coherence and contextual relevance. Its practical implication is that while it provides a baseline for evaluating surface-level quality, it may not fully capture deeper nuances or functional effectiveness in real-world applications.",
+            "metric_score": 0.0,
+            "plan_summary": "The plan demonstrates strengths in generating fluent and structurally coherent responses but shows limitations in semantic depth and lexical richness, as indicated by the BLEU and Fluency_Score metrics. Weaknesses include unclear alignment with reference content (ROUGE) and insufficient assessment of vocabulary diversity (Lexical_Diversity), which hinder comprehensive evaluation. These patterns suggest the system prioritizes surface-level quality over contextual relevance, with practical implications for real-world effectiveness requiring further refinement.",
+            "run_summary": ""
+        },
+        "Fluency_Score": {
+            "Testcases": {
+                "P1170": 0.0
+            },
+            "Evaluation_Reason": {
+                "P1170": ""
+            },
+            "metric_summary": "The Fluency_Score reflects the system's ability to generate responses that flow naturally and coherently. Strong fluency ensures smooth, engaging interactions that enhance user experience, while weaknesses may lead to awkward phrasing or disruptions that hinder clarity and comprehension.",
+            "metric_score": 0.0,
+            "plan_summary": "The plan demonstrates strengths in generating fluent and structurally coherent responses but shows limitations in semantic depth and lexical richness, as indicated by the BLEU and Fluency_Score metrics. Weaknesses include unclear alignment with reference content (ROUGE) and insufficient assessment of vocabulary diversity (Lexical_Diversity), which hinder comprehensive evaluation. These patterns suggest the system prioritizes surface-level quality over contextual relevance, with practical implications for real-world effectiveness requiring further refinement.",
+            "run_summary": ""
+        }
+    }
+}

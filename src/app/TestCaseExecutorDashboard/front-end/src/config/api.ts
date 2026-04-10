@@ -11,8 +11,10 @@ export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
  export const API_ENDPOINTS = {
     GET_ALL_FILTERS: "/get_all_filters",
     GET_ALL_TEST_RUNS: "/get_all_test_runs",
-    ANALYSE_RUN: (runName: string) =>
-    `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}`,
+   ANALYSE_RUN: (runName: string, mode?: string) =>
+    `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}${
+      mode ? `?mode=${mode}` : ""
+    }`,
     ANALYSE_RUN_STATUS: (runName: string) =>
     `${API_BASE_URL}/analyse/${encodeURIComponent(runName)}/status`,
     DOWNLOAD_REPORT: (runName: string) =>
@@ -30,6 +32,8 @@ export const AUTH_LOGOUT_URL = `${AUTH_SERVICE_URL}/web/logout`;
     GET_TARGET_METADATA: (targetName: string) =>
     `${API_BASE_URL}/targets/${encodeURIComponent(targetName)}/metadata`,
     START_RUN: `${API_BASE_URL}/start-run`,
+    DOWNLOAD_REPORT_NEW: (runName: string) =>
+  `${API_BASE_URL}/report/${encodeURIComponent(runName)}`,
     
     CONTINUE_RUN: `${API_BASE_URL}/continue-run`,    
     DEV_Config: `${API_BASE_URL}/__dev/config`,
