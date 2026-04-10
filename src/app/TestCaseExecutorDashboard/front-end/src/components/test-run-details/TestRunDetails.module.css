@@ -5,22 +5,23 @@
   margin-top: 0rem;
   padding: 0 24px;
   background-color: #f0f0fa;
-  /* min-height: calc(100vh - 0px); */
   width: 100%;
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden; /* prevent page-level horizontal scrolling */
   overflow-y: hidden; /* prevent vertical overflow beyond viewport */
-  height: 100vh; /* Full viewport height */
+  height: calc(100vh - 40px);
   box-sizing: border-box;
 }
 
 .flex {
   display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
   align-items: stretch; /* Stretch items to fill height */
   justify-content: space-between;
   gap: 12px;
-  margin-top: 50px; /* Move timeline much higher to prevent overlap */
-  height: calc(100vh - 200px); /* Leave more gap at bottom */
-  max-height: calc(100vh - 200px); /* Prevent extending beyond viewport */
+  margin-top: 16px;
 }
 
 /* ======================
@@ -40,8 +41,6 @@
   display: flex;
   flex-direction: column;
   height: 65vh;
-  /* height: var(--details-panel-height); */
-  /* max-height: calc(100vh - 200px); */
   overflow: hidden;
 }
 
@@ -445,8 +444,6 @@
   flex-direction: column;
   overflow: hidden;
   height: 65vh;
-  /* height: calc(100vh - 200px); Match exact container height */
-  /* max-height: calc(100vh - 200px); Prevent overflow */
 }
 
 /* ── BOTTOM white fade — hides last row peek, shown when NOT at bottom ── */
@@ -545,12 +542,12 @@
 
 .tableLayout {
   flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
   padding: 2px 8px 2px 8px; /* Match left card margin */
   display: flex;
   flex-direction: column;
-  height: 65vh; /* Match exact container height */
-  /* max-height: calc(100vh - 200px); Prevent overflow */
+  height: 65vh;
 }
 
 .resultsTable {

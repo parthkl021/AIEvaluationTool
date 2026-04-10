@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from "@/components/Sidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +52,12 @@ interface DashboardStats {
   metrics: number;
 }
 
+interface ImporterWsEvent {
+  event: "idle" | "accepted" | "running" | "log" | "success" | "error";
+  status: "idle" | "running" | "success" | "error";
+  message: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -78,6 +84,11 @@ const Dashboard = () => {
   const [importerLoading, setImporterLoading] = useState(false);
   const [importerStatus, setImporterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [importerMessage, setImporterMessage] = useState("");
+  const [importerLogs, setImporterLogs] = useState<string[]>([]);
+  const importerSocketRef = useRef<WebSocket | null>(null);
+  const importerSocketClosingRef = useRef(false);
+  const importerLoadingRef = useRef(false);
+  const importerReloadTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -159,6 +170,20 @@ const Dashboard = () => {
     fetchUserRole();
     fetchDashboardData();
   }, [navigate, toast]);
+
+  useEffect(() => {
+    importerLoadingRef.current = importerLoading;
+  }, [importerLoading]);
+
+  useEffect(() => {
+    return () => {
+      importerSocketClosingRef.current = true;
+      importerSocketRef.current?.close();
+      if (importerReloadTimerRef.current !== null) {
+        window.clearTimeout(importerReloadTimerRef.current);
+      }
+    };
+  }, []);
 
   const getStatusColor = (status: Activity["status"]) => {
     switch (status) {
@@ -253,10 +278,81 @@ const Dashboard = () => {
     }
   };
 
+  const closeImporterSocket = () => {
+    importerSocketClosingRef.current = true;
+    importerSocketRef.current?.close();
+    importerSocketRef.current = null;
+  };
+
+  const connectImporterSocket = (token: string) =>
+    new Promise<void>((resolve, reject) => {
+      importerSocketClosingRef.current = false;
+      const socket = new WebSocket(
+        `${API_ENDPOINTS.IMPORTER_STATUS_WS}?token=${encodeURIComponent(token)}`
+      );
+
+      socket.onopen = () => {
+        importerSocketRef.current = socket;
+        resolve();
+      };
+
+      socket.onmessage = (event) => {
+        const payload = JSON.parse(event.data) as ImporterWsEvent;
+
+        if (payload.event === "idle") {
+          return;
+        }
+
+        setImporterDialogOpen(true);
+        setImporterMessage(payload.message);
+
+        if (payload.event === "log") {
+          setImporterLogs((current) => [...current.slice(-7), payload.message]);
+          return;
+        }
+
+        if (payload.status === "running") {
+          setImporterLoading(true);
+          setImporterStatus("loading");
+          return;
+        }
+
+        if (payload.status === "success") {
+          setImporterLoading(false);
+          setImporterStatus("success");
+          closeImporterSocket();
+          importerReloadTimerRef.current = window.setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+          return;
+        }
+
+        if (payload.status === "error") {
+          setImporterLoading(false);
+          setImporterStatus("error");
+          closeImporterSocket();
+        }
+      };
+
+      socket.onerror = () => {
+        reject(new Error("Unable to connect to importer status websocket"));
+      };
+
+      socket.onclose = () => {
+        importerSocketRef.current = null;
+        if (!importerSocketClosingRef.current && importerLoadingRef.current) {
+          setImporterLoading(false);
+          setImporterStatus("error");
+          setImporterMessage("Importer status connection was closed unexpectedly.");
+        }
+      };
+    });
+
   const runImporter = async () => {
     setImporterLoading(true);
     setImporterStatus("loading");
     setImporterMessage("Running importer... This may take a few minutes.");
+    setImporterLogs([]);
     setImporterDialogOpen(true);
 
     try {
@@ -264,8 +360,11 @@ const Dashboard = () => {
       if (!token) {
         setImporterStatus("error");
         setImporterMessage("Authentication failed");
+        setImporterLoading(false);
         return;
       }
+
+      await connectImporterSocket(token);
 
       const response = await fetch(API_ENDPOINTS.IMPORTER_RUN, {
         method: "POST",
@@ -277,21 +376,21 @@ const Dashboard = () => {
 
       const data = await response.json();
 
-      if (response.ok && data.status === "success") {
-        setImporterStatus("success");
-        setImporterMessage("Data imported successfully! The database has been updated with all the test data.");
-        // Refresh dashboard stats after successful import
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
+      if (!response.ok && data.status !== "running") {
+        closeImporterSocket();
         setImporterStatus("error");
         setImporterMessage(data.message || "Failed to import data. Please check the server logs.");
+        setImporterLoading(false);
+        return;
       }
+
+      setImporterStatus("loading");
+      setImporterLoading(true);
+      setImporterMessage(data.message || "Importer started. Waiting for live updates...");
     } catch (error) {
+      closeImporterSocket();
       setImporterStatus("error");
       setImporterMessage(`Error: ${error instanceof Error ? error.message : "An unexpected error occurred"}`);
-    } finally {
       setImporterLoading(false);
     }
   };
@@ -375,7 +474,12 @@ const Dashboard = () => {
 
         {/* Importer Button - Fixed in Bottom Right */}
         <button
-          onClick={runImporter}
+          onClick={() => {
+            setImporterStatus("idle");
+            setImporterMessage("");
+            setImporterLogs([]);
+            setImporterDialogOpen(true);
+          }}
           disabled={importerLoading}
           className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 z-30"
         >
@@ -460,7 +564,17 @@ const Dashboard = () => {
             {importerStatus === "loading" && (
               <div className="flex flex-col items-center gap-4">
                 <Loader className="w-12 h-12 text-blue-600 animate-spin" />
-                <p className="text-muted-foreground">{importerMessage}</p>
+                <p className="text-foreground font-medium">The data is being imported. it will take a few seconds</p>
+                {/* <p className="text-muted-foreground">{importerMessage}</p> */}
+                {/* {importerLogs.length > 0 && (
+                  <div className="w-full max-h-48 overflow-y-auto rounded-md bg-slate-950 p-3 text-left">
+                    {importerLogs.map((log, index) => (
+                      <p key={`${log}-${index}`} className="font-mono text-xs text-slate-100">
+                        {log}
+                      </p>
+                    ))}
+                  </div>
+                )} */}
               </div>
             )}
 
