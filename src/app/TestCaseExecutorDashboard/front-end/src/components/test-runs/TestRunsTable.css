@@ -1,8 +1,9 @@
 .test-runs-table-wrapper {
   width: 100%;
-  padding: 20px;
+  padding: 0;
   box-sizing: border-box;
   max-width: 100%;
+  position: relative;
 }
 
 .table-card {
@@ -10,7 +11,7 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
   width: 100%;
   max-width: 100%;
 }
@@ -370,33 +371,6 @@ td.col-evaluation {
   color: #475569 !important;
 }
 
-.test-runs-table .actions-group .action-icon-button::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 10px);
-  transform: translateX(-50%) translateY(-4px);
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: #14355e;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
-  z-index: 9999;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
-}
-
-.test-runs-table .actions-group .action-icon-button:hover::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
 
 .table-loading, .table-empty {
   text-align: center;
@@ -420,7 +394,167 @@ td.col-evaluation {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+.download-overlay {
+  position: absolute;
+  inset: 0;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  border-radius: 12px;
+}
+.download-overlay-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 260px;
+}
 
+.download-big-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(13, 110, 253, 0.2);
+  border-top-color: #0d6efd;
+  border-radius: 50%;
+  animation: download-spin 0.8s linear infinite;
+}
+
+.download-success-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #d1e7dd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a3622;
+  font-size: 18px;
+}
+
+.download-overlay-text { text-align: center; }
+
+.download-overlay-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  margin: 0 0 4px;
+}
+
+.download-overlay-sub {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.download-prog-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.download-prog-fill {
+  height: 100%;
+  background: #0d6efd;
+  border-radius: 99px;
+  transition: width 0.15s linear;
+}
+
+.download-pct {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0d6efd;
+}
+.analyse-modal {
+  min-width: 320px;
+  max-width: 400px;
+  gap: 20px;
+}
+
+.analyse-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.analyse-modal-icon {
+  font-size: 28px;
+  color: #2f7de9;
+  margin-bottom: 4px;
+}
+
+.analyse-modal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.analyse-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.analyse-option-btn:hover {
+  border-color: #2f7de9;
+  background: #eff6ff;
+}
+
+.analyse-option-btn i {
+  font-size: 20px;
+  color: #2f7de9;
+  flex-shrink: 0;
+}
+
+.analyse-option-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px;
+}
+
+.analyse-option-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.analyse-cancel-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.analyse-cancel-btn:hover {
+  background: #f1f5f9;
+}
+@keyframes download-spin {
+  to { transform: rotate(360deg); }
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);

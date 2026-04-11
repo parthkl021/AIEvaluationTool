@@ -36,11 +36,20 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   const navigate = useNavigate();
   const loginUrl = LOGIN_URL;
   const [runs, setRuns] = useState<TestRun[]>([]);
-  const [analyseModal, setAnalyseModal] = useState<{ runName: string } | null>(null);
   const [filteredRuns, setFilteredRuns] = useState<TestRun[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [downloadState, setDownloadState] = useState<{
+    runName: string;
+    progress: number;
+    phase: "generating" | "done";
+  } | null>(null);
+  const [analyseModal, setAnalyseModal] = useState<{
+    runName: string;
+    hasScore: boolean;
+  } | null>(null);
+  const [analyseLoading, setAnalyseLoading] = useState(false);
   const [availableFilters, setAvailableFilters] = useState<AllFilters>({
     domains: [],
     languages: [],
@@ -52,8 +61,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [openFilterColumn, setOpenFilterColumn] = useState<string | null>(null);
   const filterRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  
-  // Sort state
+
   const [sortBy, setSortBy] = useState<"start_ts" | "end_ts">("end_ts");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
@@ -81,7 +89,6 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
     { key: "run_name", label: "Run Name", filterable: false },
     { key: "target", label: "Target", filterable: true, filterType: "target" },
     { key: "start_ts", label: "Started At", filterable: false, sortable: true, sortKey: "start_ts" },
-    // { key: "end_ts", label: "Ended At", filterable: false, sortable: true, sortKey: "end_ts" },
     { key: "duration", label: "Duration", filterable: false },
     { key: "average_score", label: "Score", filterable: false },
     { key: "evaluation_ts", label: "Evaluation Time", filterable: false },
@@ -91,15 +98,20 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   ];
 
   const startAnalysis = async (mode: string, runName: string) => {
-    
-    const url = API_ENDPOINTS.ANALYSE_RUN(runName, mode);
-    console.log("Starting analysis with URL:", url, "mode:", mode);
-    await fetch(url, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-    navigate(`/analyse/${encodeURIComponent(runName)}?mode=${mode}`);
+    setAnalyseLoading(true);
+    try {
+      const url = API_ENDPOINTS.ANALYSE_RUN(runName, mode);
+      await fetch(url, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      navigate(`/analyse/${encodeURIComponent(runName)}?mode=${mode}`);
+    } catch (err) {
+      console.error("Analysis failed:", err);
+      setAnalyseLoading(false);
+      setAnalyseModal(null);
+    }
   };
 
   useEffect(() => {
@@ -109,23 +121,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
       credentials: "include",
     })
       .then((res) => {
-        if (res.status === 401) {
-          redirectToLogin();
-          throw new Error("Unauthorized");
-        }
-        if (!res.ok) {
-          throw new Error(`Failed to fetch filters (${res.status})`);
-        }
+        if (res.status === 401) { redirectToLogin(); throw new Error("Unauthorized"); }
+        if (!res.ok) throw new Error(`Failed to fetch filters (${res.status})`);
         return res.json();
       })
-      .then((data: AllFilters) => {
-        setAvailableFilters(data);
-        setFiltersLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching filters:", err);
-        setFiltersLoading(false);
-      });
+      .then((data: AllFilters) => { setAvailableFilters(data); setFiltersLoading(false); })
+      .catch((err) => { console.error("Error fetching filters:", err); setFiltersLoading(false); });
   }, [loginUrl]);
 
   useEffect(() => {
@@ -167,32 +168,18 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
 
   useEffect(() => {
     setLoading(true);
-
     const params = new URLSearchParams(filters);
     params.append("sort_by", sortBy);
     params.append("order", order);
-
     const url = `${API_BASE_URL}${API_ENDPOINTS.GET_ALL_TEST_RUNS}?${params.toString()}`;
-
-    fetch(url, {
-      headers: getAuthHeaders(),
-      credentials: "include",
-    })
+    fetch(url, { headers: getAuthHeaders(), credentials: "include" })
       .then((res) => {
-        if (res.status === 401) {
-          redirectToLogin();
-          throw new Error("Unauthorized");
-        }
-        if (!res.ok) {
-          throw new Error(`Failed to fetch test runs (${res.status})`);
-        }
+        if (res.status === 401) { redirectToLogin(); throw new Error("Unauthorized"); }
+        if (!res.ok) throw new Error(`Failed to fetch test runs (${res.status})`);
         return res.json();
       })
       .then((data: TestRun[] | { detail?: string }) => {
         const safeRuns = Array.isArray(data) ? data : [];
-        if (!Array.isArray(data)) {
-          console.error("Unexpected test-runs response:", data);
-        }
         setRuns(safeRuns);
         setFilteredRuns(safeRuns);
         setCurrentPage(1);
@@ -206,57 +193,26 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
   const safeFilteredRuns = Array.isArray(filteredRuns) ? filteredRuns : [];
   const currentRuns = safeFilteredRuns.slice(indexOfFirstRun, indexOfLastRun);
   const totalPages = Math.ceil(safeFilteredRuns.length / itemsPerPage);
-
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  // Keep active page button visible in the horizontal pagination strip
   useEffect(() => {
-    if (totalPages <= 5) {
-      return;
-    }
-
+    if (totalPages <= 5) return;
     const activeButton = pageNumberButtonRefs.current[currentPage];
     if (activeButton) {
-      activeButton.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }
-  }, [currentPage, totalPages]);
-
-  // Keep active page button visible in the horizontal pagination strip
-  useEffect(() => {
-    if (totalPages <= 5) {
-      return;
-    }
-
-    const activeButton = pageNumberButtonRefs.current[currentPage];
-    if (activeButton) {
-      activeButton.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
+      activeButton.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     }
   }, [currentPage, totalPages]);
 
   const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
+  for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
 
   const SortIcon = ({ columnKey }: { columnKey: "start_ts" | "end_ts" }) => {
-  const isActive = sortBy === columnKey;
-  
-  if (!isActive) {
-    return <i className="bi bi-chevron-expand" style={{ fontSize: '22px', color: 'rgba(255,255,255,0.35)' }}></i>;
-  }
-  
-  return order === "asc"
-    ? <i className="bi bi-chevron-up" style={{ fontSize: '22px', color: '#ffffff', fontWeight: 'bold' }}></i>
-    : <i className="bi bi-chevron-down" style={{ fontSize: '22px', color: '#ffffff', fontWeight: 'bold' }}></i>;
-};
+    const isActive = sortBy === columnKey;
+    if (!isActive) return <i className="bi bi-chevron-expand" style={{ fontSize: '22px', color: 'rgba(255,255,255,0.35)' }}></i>;
+    return order === "asc"
+      ? <i className="bi bi-chevron-up" style={{ fontSize: '22px', color: '#ffffff', fontWeight: 'bold' }}></i>
+      : <i className="bi bi-chevron-down" style={{ fontSize: '22px', color: '#ffffff', fontWeight: 'bold' }}></i>;
+  };
 
   return (
     <div className="test-runs-table-wrapper">
@@ -274,39 +230,22 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                   <th
                     key={header.key}
                     scope="col"
-                    className={`${COLUMN_CLASS[header.key] || ""} ${header.filterable ? "filterable-header" : ""} ${
-                      header.sortable ? "sortable-header" : ""
-                    }`}
+                    className={`${COLUMN_CLASS[header.key] || ""} ${header.filterable ? "filterable-header" : ""} ${header.sortable ? "sortable-header" : ""}`}
                   >
                     <div className="header-content">
-                      {/* Sortable columns */}
                       {header.sortable && header.sortKey ? (
-                        <button
-                          className="sort-trigger"
-                          onClick={() => handleSort(header.sortKey!)}
-                          title={`Sort by ${header.label}`}
-                        >
+                        <button className="sort-trigger" onClick={() => handleSort(header.sortKey!)} title={`Sort by ${header.label}`}>
                           <span>{header.label}</span>
                           <SortIcon columnKey={header.sortKey} />
                         </button>
                       ) : (
                         <span>{header.label}</span>
                       )}
-
-                      {/* Filterable columns */}
                       {header.filterable && header.filterType && (
-                        <div
-                          className="filter-wrapper"
-                          ref={(el) => { filterRefs.current[header.key] = el; }}
-                        >
-                          <button
-                            className="filter-trigger"
-                            onClick={() => toggleFilterDropdown(header.key)}
-                            title={`Filter by ${header.label}`}
-                          >
+                        <div className="filter-wrapper" ref={(el) => { filterRefs.current[header.key] = el; }}>
+                          <button className="filter-trigger" onClick={() => toggleFilterDropdown(header.key)} title={`Filter by ${header.label}`}>
                             <i className={`bi bi-funnel${filters[header.filterType] ? "-fill" : ""}`}></i>
                           </button>
-
                           {openFilterColumn === header.key && (
                             <div className="filter-dropdown">
                               <div className="filter-options">
@@ -317,19 +256,12 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                                   disabled={filtersLoading}
                                 >
                                   <option value="">All {header.label}</option>
-                                  {availableFilters[FILTER_KEY_MAP[header.filterType!]]?.map(
-                                    (opt: FilterOption) => (
-                                      <option key={opt.filter_name} value={opt.filter_name}>
-                                        {opt.filter_name}
-                                      </option>
-                                    )
-                                  )}
+                                  {availableFilters[FILTER_KEY_MAP[header.filterType!]]?.map((opt: FilterOption) => (
+                                    <option key={opt.filter_name} value={opt.filter_name}>{opt.filter_name}</option>
+                                  ))}
                                 </select>
                                 {filters[header.filterType] && (
-                                  <button
-                                    className="btn btn-sm btn-outline-secondary mt-2 w-100"
-                                    onClick={() => handleFilterClear(header.filterType!)}
-                                  >
+                                  <button className="btn btn-sm btn-outline-secondary mt-2 w-100" onClick={() => handleFilterClear(header.filterType!)}>
                                     Clear Filter
                                   </button>
                                 )}
@@ -371,120 +303,44 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                       }
                       navigate(`/test-runs/${run.run_name}`);
                     }}
-                    >
+                  >
                     <td className="col-run-id cell-center nowrap">{run.run_id}</td>
                     <td className="col-run-name run-name-cell">
-                      <span className="run-name-text" title={run.run_name}>
-                        {run.run_name}
-                      </span>
+                      <span className="run-name-text" title={run.run_name}>{run.run_name}</span>
                     </td>
                     <td className="col-target nowrap">
-                      <span className="cell-ellipsis" title={run.target}>
-                        {run.target}
-                      </span>
+                      <span className="cell-ellipsis" title={run.target}>{run.target}</span>
                     </td>
                     <td className="col-started-at nowrap">
                       <span className="cell-ellipsis" title={new Date(run.start_ts).toLocaleString()}>
                         {new Date(run.start_ts).toLocaleString()}
                       </span>
                     </td>
-                    {/* <td>{run.end_ts ? new Date(run.end_ts).toLocaleString() : "-"}</td> */}
                     <td className="col-duration cell-center nowrap">
-                      {run.duration_ms != null
-                        ? formatDuration(run.duration_ms)
-                        : "-"}
+                      {run.duration_ms != null ? formatDuration(run.duration_ms) : "-"}
                     </td>
                     <td className="col-score cell-center nowrap" onClick={(e) => e.stopPropagation()}>
-                      {typeof run.average_score === "number"
-                        ? run.average_score.toFixed(2)
-                        : "-"}
+                      {typeof run.average_score === "number" ? run.average_score.toFixed(2) : "-"}
                     </td>
-                     <td className="col-evaluation nowrap">
-                      {run.evaluation_ts != null
-                        ? (
-                          <span className="cell-ellipsis" title={new Date(run.evaluation_ts).toLocaleString("en-US")}>
-                            {new Date(run.evaluation_ts).toLocaleString("en-US")}
-                          </span>
-                        )  // 👈 raw ISO string like "2025-03-20T14:32:00"
-                        : "-"}
+                    <td className="col-evaluation nowrap">
+                      {run.evaluation_ts != null ? (
+                        <span className="cell-ellipsis" title={new Date(run.evaluation_ts).toLocaleString("en-US")}>
+                          {new Date(run.evaluation_ts).toLocaleString("en-US")}
+                        </span>
+                      ) : "-"}
                     </td>
                     <td className="col-status nowrap">
-                      <span
-                        className={`status-badge ${
-                          run.status === "COMPLETED" || run.status === "PASSED"
-                            ? "status-completed"
-                            : run.status === "RUNNING" || run.status === "IN_PROGRESS"
-                            ? "status-running"
-                            : run.status === "FAILED"
-                            ? "status-failed"
-                            : "status-default"
-                        }`}
-                      >
+                      <span className={`status-badge ${
+                        run.status === "COMPLETED" || run.status === "PASSED" ? "status-completed"
+                        : run.status === "RUNNING" || run.status === "IN_PROGRESS" ? "status-running"
+                        : run.status === "FAILED" ? "status-failed"
+                        : "status-default"
+                      }`}>
                         {run.status}
                       </span>
                     </td>
-                    {analyseModal && (
-  <div
-    style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      zIndex: 1000,
-    }}
-    onClick={() => setAnalyseModal(null)}
-  >
-    <div
-      style={{
-        background: "#fff", borderRadius: 12, padding: 28,
-        minWidth: 320, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-        display: "flex", flexDirection: "column", gap: 16,
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#1e293b" }}>
-        Choose Analysis Mode
-      </h3>
-      <p style={{ margin: 0, fontSize: "0.9rem", color: "#64748b" }}>
-        {analyseModal.runName}
-      </p>
-      <button
-        type="button"
-        style={{
-          padding: "10px 16px", borderRadius: 8, border: "1px solid #cbd5e1",
-          background: "#f8fafc", cursor: "pointer", fontWeight: 600,
-          fontSize: "0.95rem", textAlign: "left",
-        }}
-        onClick={() => { startAnalysis("retry_failed", analyseModal.runName); setAnalyseModal(null); }}
-      >
-        Retry Failed
-      </button>
-      <button
-        type="button"
-        style={{
-          padding: "10px 16px", borderRadius: 8, border: "1px solid #cbd5e1",
-          background: "#f8fafc", cursor: "pointer", fontWeight: 600,
-          fontSize: "0.95rem", textAlign: "left",
-        }}
-        onClick={() => { startAnalysis("rerun_all", analyseModal.runName); setAnalyseModal(null); }}
-      >
-        Rerun All
-      </button>
-      <button
-        type="button"
-        style={{
-          padding: "8px", border: "none", background: "none",
-          color: "#94a3b8", cursor: "pointer", fontSize: "0.9rem",
-        }}
-        onClick={() => setAnalyseModal(null)}
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
                     <td className="col-domain nowrap">
-                      <span className="cell-ellipsis" title={run.domain}>
-                        {run.domain}
-                      </span>
+                      <span className="cell-ellipsis" title={run.domain}>{run.domain}</span>
                     </td>
                     <td className="col-actions actions-cell nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="actions-group">
@@ -502,13 +358,7 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           type="button"
                           className="action-icon-button action-analyse"
                           data-tooltip="Analyse"
-                          onClick={() => {
-                            if (typeof run.average_score === "number") {
-                              setAnalyseModal({ runName: run.run_name });
-                            } else {
-                              startAnalysis("rerun_all", run.run_name);
-                            }
-                          }}
+                          onClick={() => setAnalyseModal({ runName: run.run_name, hasScore: typeof run.average_score === "number" })}
                           title="Analyse"
                           aria-label={`Analyse ${run.run_name}`}
                         >
@@ -518,17 +368,37 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
                           type="button"
                           className="action-icon-button action-report"
                           data-tooltip="Report"
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = API_ENDPOINTS.DOWNLOAD_REPORT_NEW(run.run_name);
-                            link.setAttribute(
-                              "download",
-                              `${run.run_name}-evaluation.pdf`
-                            );
-
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                          onClick={async () => {
+                            if (downloadState) return;
+                            setDownloadState({ runName: run.run_name, progress: 0, phase: "generating" });
+                            let p = 0;
+                            const tick = setInterval(() => {
+                              p = Math.min(p + Math.random() * 7 + 1, 92);
+                              setDownloadState(prev => prev ? { ...prev, progress: Math.round(p) } : null);
+                            }, 180);
+                            try {
+                              const response = await fetch(API_ENDPOINTS.DOWNLOAD_REPORT_NEW(run.run_name), {
+                                headers: getAuthHeaders(),
+                                credentials: "include",
+                              });
+                              if (!response.ok) throw new Error("Failed to download report");
+                              const blob = await response.blob();
+                              clearInterval(tick);
+                              setDownloadState(prev => prev ? { ...prev, progress: 100, phase: "done" } : null);
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.setAttribute("download", `${run.run_name}-evaluation.pdf`);
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                              setTimeout(() => setDownloadState(null), 1500);
+                            } catch (err) {
+                              clearInterval(tick);
+                              setDownloadState(null);
+                              console.error("Report download failed:", err);
+                            }
                           }}
                           title="Report"
                           aria-label={`Download report for ${run.run_name}`}
@@ -546,70 +416,121 @@ const TestRunsTable: React.FC<Props> = ({ filters, onFilterChange }) => {
       </div>
 
       <div className="sticky">
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="pagination-wrapper">
-          <div className="pagination-container">
-            <button
-              className="pagination-button"
-              onClick={() => paginate(1)}
-              disabled={currentPage === 1}
-              aria-label="First page"
-            >
-              <i className="bi bi-chevron-double-left"></i>
-            </button>
-            <button
-              className="pagination-button"
-              onClick={() => paginate(currentPage - 1)}
-              disabled={currentPage === 1}
-              aria-label="Previous page"
-            >
-              <i className="bi bi-chevron-left"></i>
-            </button>
-            
-            <div
-              ref={pageNumbersWrapperRef}
-              className={`pagination-numbers-wrapper ${totalPages > 5 ? 'scrollable' : ''}`}
-            >
-              {pageNumbers.map(number => (
-                <button
-                  key={number}
-                  ref={(el) => {
-                    pageNumberButtonRefs.current[number] = el;
-                  }}
-                  className={`pagination-number ${number === currentPage ? 'active' : ''}`}
-                  onClick={() => paginate(number)}
-                  aria-label={`Page ${number}`}
-                >
-                  {number}
-                </button>
-              ))}
+        {totalPages > 1 && (
+          <div className="pagination-wrapper">
+            <div className="pagination-container">
+              <button className="pagination-button" onClick={() => paginate(1)} disabled={currentPage === 1} aria-label="First page">
+                <i className="bi bi-chevron-double-left"></i>
+              </button>
+              <button className="pagination-button" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} aria-label="Previous page">
+                <i className="bi bi-chevron-left"></i>
+              </button>
+              <div ref={pageNumbersWrapperRef} className={`pagination-numbers-wrapper ${totalPages > 5 ? 'scrollable' : ''}`}>
+                {pageNumbers.map(number => (
+                  <button
+                    key={number}
+                    ref={(el) => { pageNumberButtonRefs.current[number] = el; }}
+                    className={`pagination-number ${number === currentPage ? 'active' : ''}`}
+                    onClick={() => paginate(number)}
+                    aria-label={`Page ${number}`}
+                  >
+                    {number}
+                  </button>
+                ))}
+              </div>
+              <button className="pagination-button" onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Next page">
+                <i className="bi bi-chevron-right"></i>
+              </button>
+              <button className="pagination-button" onClick={() => paginate(totalPages)} disabled={currentPage === totalPages} aria-label="Last page">
+                <i className="bi bi-chevron-double-right"></i>
+              </button>
             </div>
-            
-            <button
-              className="pagination-button"
-              onClick={() => paginate(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              aria-label="Next page"
-            >
-              <i className="bi bi-chevron-right"></i>
-            </button>
-            <button
-              className="pagination-button"
-              onClick={() => paginate(totalPages)}
-              disabled={currentPage === totalPages}
-              aria-label="Last page"
-            >
-              <i className="bi bi-chevron-double-right"></i>
-            </button>
+          </div>
+        )}
+        <div className="table-footer">
+          Showing {currentRuns.length} of {safeFilteredRuns.length} test runs
+        </div>
+      </div>
+
+      {/* Download overlay */}
+      {downloadState && (
+        <div className="download-overlay">
+          <div className="download-overlay-card">
+            {downloadState.phase === "done" ? (
+              <div className="download-success-icon">
+                <i className="bi bi-check-lg" />
+              </div>
+            ) : (
+              <div className="download-big-spinner" />
+            )}
+            <div className="download-overlay-text">
+              <p className="download-overlay-title">
+                {downloadState.phase === "done" ? "Download ready" : "Generating report…"}
+              </p>
+              <p className="download-overlay-sub">
+                {downloadState.phase === "done" ? "Saving to your device…" : downloadState.runName}
+              </p>
+            </div>
+            <div className="download-prog-track">
+              <div className="download-prog-fill" style={{ width: `${downloadState.progress}%` }} />
+            </div>
+            <span className="download-pct">{downloadState.progress}%</span>
           </div>
         </div>
       )}
-      
-      <div className="table-footer">
-        Showing {currentRuns.length} of {safeFilteredRuns.length} test runs
-      </div>
-      </div>
+
+      {/* Analyse modal */}
+      {analyseModal && (
+        <div className="download-overlay" onClick={() => { if (!analyseLoading) setAnalyseModal(null); }}>
+          <div className="download-overlay-card analyse-modal" onClick={(e) => e.stopPropagation()}>
+            {analyseLoading ? (
+              <>
+                <div className="download-big-spinner" />
+                <div className="analyse-modal-header">
+                  <p className="download-overlay-title" style={{ margin: 0 }}>Starting Analysis…</p>
+                  <p className="download-overlay-sub" style={{ marginTop: 4 }}>{analyseModal.runName}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="analyse-modal-header">
+                  <i className="bi bi-bar-chart-fill analyse-modal-icon"></i>
+                  <p className="download-overlay-title" style={{ margin: 0 }}>Analyse Run</p>
+                  <p className="download-overlay-sub" style={{ marginTop: 4 }}>{analyseModal.runName}</p>
+                </div>
+                <div className="analyse-modal-options">
+                  {analyseModal.hasScore && (
+                    <button
+                      className="analyse-option-btn"
+                      onClick={() => startAnalysis("retry_failed", analyseModal.runName)}
+                    >
+                      <i className="bi bi-arrow-repeat"></i>
+                      <div>
+                        <p className="analyse-option-title">Retry Failed</p>
+                        <p className="analyse-option-sub">Re-run only the failed test cases</p>
+                      </div>
+                    </button>
+                  )}
+                  <button
+                    className="analyse-option-btn"
+                    onClick={() => startAnalysis("rerun_all", analyseModal.runName)}
+                  >
+                    <i className="bi bi-arrow-clockwise"></i>
+                    <div>
+                      <p className="analyse-option-title">Rerun Whole</p>
+                      <p className="analyse-option-sub">Re-run all test cases from scratch</p>
+                    </div>
+                  </button>
+                </div>
+                <button className="analyse-cancel-btn" onClick={() => setAnalyseModal(null)}>
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -618,32 +539,15 @@ export default TestRunsTable;
 
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
-  
   if (seconds < 1) return '0s';
   if (seconds < 60) return `${seconds}s`;
-  
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  
-  if (minutes < 60) {
-    return remainingSeconds > 0 
-      ? `${minutes}m ${remainingSeconds}s`
-      : `${minutes}m`;
-  }
-  
+  if (minutes < 60) return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  
-  if (hours < 24) {
-    return remainingMinutes > 0
-      ? `${hours}h ${remainingMinutes}m`
-      : `${hours}h`;
-  }
-  
+  if (hours < 24) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
-  
-  return remainingHours > 0
-    ? `${days}d ${remainingHours}h`
-    : `${days}d`;
+  return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
 }

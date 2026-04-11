@@ -641,7 +641,9 @@ const Analysis: React.FC = () => {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Run Analysis</h2>
-        {isAnalysing && <p>Analysis is running. Live execution loop is updating...</p>}
+        {orderedDetails.length > 0 && isAnalysing && (
+  <p>Analysis is running. Live execution loop is updating...</p>
+)}
         {isCompleted && <p className={styles.success}>Completed successfully.</p>}
       </div>
 
