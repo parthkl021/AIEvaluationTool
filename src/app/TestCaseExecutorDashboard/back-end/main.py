@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query, WebSocket, BackgroundTasks,WebSocketDisconnect, Request
 from fastapi.responses import FileResponse
 from services.ws_manager import ws_manager 
@@ -34,7 +35,7 @@ from lib.interface_manager import InterfaceManagerClient  # Import the Interface
 from configuration.database import get_db
 from configuration.database import db
 from configuration.paths import (
-    INTERFACE_MANAGER_CONFIG as interface_manager_config,
+    ROOT_CONFIG_PATH as interface_manager_config,
     profile_path,
 )
 from apis.testruns import router as testruns_router
@@ -59,7 +60,7 @@ from middleware.auth import AuthMiddleware
 
 ## Configure DB and port connection  (using config.json for flexibility)
 
-config_path = os.path.join(os.path.dirname(__file__), "config.json")
+config_path = os.path.join(Path(__file__).resolve().parents[5], "config.json")
 try:
     with open(config_path, "r") as f:
         config = json.load(f)

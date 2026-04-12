@@ -40,7 +40,12 @@ def ensure_interface_manager_port_running(
         )
 
     # 2️⃣ Extract base_url
-    base_url = config.get("base_url")
+    config_interface_manager = config.get("interface_manager", {})
+    if config_interface_manager.get("docker"):
+        base_url = config_interface_manager.get("base_url")
+    else:
+        base_url = config_interface_manager.get("base_url_local")
+        
     if not base_url:
         raise HTTPException(
             status_code=500,

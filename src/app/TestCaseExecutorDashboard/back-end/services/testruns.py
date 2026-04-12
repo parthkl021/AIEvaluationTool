@@ -7,7 +7,7 @@ from datetime import datetime
 import randomname
 
 from configuration.paths import (
-    INTERFACE_MANAGER_CONFIG as interface_manager_config,
+    ROOT_CONFIG_PATH as interface_manager_config,
     wb,
 )
 import tempfile
