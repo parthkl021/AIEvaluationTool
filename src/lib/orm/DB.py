@@ -1536,28 +1536,6 @@ class DB:
             result = session.execute(sql).scalars().first()
             return result is not None
 
-    # def is_testcase_in_testplan(self, test_case_id: int, plan_name: str) -> bool:
-    #     with self.Session() as session:
-
-    #         testcase = session.query(TestCases).filter_by(
-    #             testcase_id=test_case_id
-    #         ).first()
-
-    #         if not testcase:
-    #             return False
-
-    #         testplan = session.query(TestPlans).filter_by(
-    #             plan_name=plan_name
-    #         ).first()
-
-    #         if not testplan:
-    #             return False
-
-    #         return any(
-    #             metric in testplan.metrics
-    #             for metric in testcase.metrics
-    #         )
-    
     def get_testcases_by_metric(self, metric_name:str, n:int = 0, lang_names:Optional[List[str]] = None, domain_name:Optional[str] = None) -> List[TestCase]:
         """
         Fetches test cases based on the metric name, language names, and domain name.
@@ -1719,6 +1697,9 @@ class DB:
                         #session.add(new_testcase)
                 
                 if len(new_testcases) == 0:
+                    # Existing testcase->metric associations may have been appended above.
+                    # Commit those relationship updates before returning.
+                    session.commit()
                     self.logger.debug(f"No new test cases to add for metric '{metric.metric_name}'.")
                     return True
                 
@@ -3607,6 +3588,7 @@ class DB:
                              plan_name=result.plan.plan_name,
                              status=getattr(result, "testcase_status"),
                              detail_id=detail_id)
+        
 
     def get_run_details_by_run_id(self, run_id: int) -> list[RunDetail]:
         with self.Session() as session:
@@ -3624,6 +3606,7 @@ class DB:
                 )
                 for r in results
             ]                         
+        
         
     def add_or_update_testrun_detail(self, run_detail: RunDetail) -> int:
         """

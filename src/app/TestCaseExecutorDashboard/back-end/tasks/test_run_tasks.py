@@ -5,7 +5,7 @@ from datetime import datetime
 
 from configuration.database import db
 from configuration.paths import (
-    INTERFACE_MANAGER_CONFIG as interface_manager_config,
+    ROOT_CONFIG_PATH as config_path,
     profile_path,
 )
 from lib.data import Conversation, RunDetail
@@ -25,8 +25,10 @@ def is_error_response(response):
         indicator in response[0]["response"].lower() for indicator in error_indicators
     )
 
-with open(interface_manager_config, "r") as f:
-    interface_manager_config_read = json.load(f)
+with open(config_path, "r") as f:
+    config_read = json.load(f)
+
+interface_manager_config=config_read.get("interface_manager", {})
 
 async def step(ws_payload, delay=0.1):
     await ws_manager.send_all(ws_payload)
@@ -69,8 +71,13 @@ async def execute_testcases(
 
         application_type = APPLICATION_TYPE_MAP[target_obj.target_type]
 
+        if interface_manager_config.get("docker", False):
+            base_url = interface_manager_config["base_url"]
+        else:
+            base_url = interface_manager_config["base_url_local"]
+
         client = InterfaceManagerClient(
-            base_url=interface_manager_config_read["base_url"],
+            base_url=base_url,
             application_type=application_type,
             agent_name=agent_name,
         )

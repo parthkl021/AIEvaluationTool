@@ -59,5 +59,4 @@ chroma_langchain_db/
 data/AIEvaluationData.db
 
 reports/
-.dockerignore
 chrome-data/

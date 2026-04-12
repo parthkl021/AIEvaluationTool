@@ -399,9 +399,10 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
         search_box = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, search_input_xpath))
         )
-        search_box.click()
         search_box.clear()
         search_box.send_keys(entity_name)
+        
+        time.sleep(5)
 
         contact_select = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, contact_selection))
