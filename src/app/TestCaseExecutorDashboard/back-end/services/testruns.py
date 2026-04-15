@@ -402,7 +402,7 @@ def get_all_test_runs_service(
 
             scores = []
             for e in timeline:
-                if e.evaluation_score is not None:
+                if (e.evaluation_score is not None) and (e.evaluation_score <= 1):
                     scores.append(float(e.evaluation_score))
 
             average_score = (
