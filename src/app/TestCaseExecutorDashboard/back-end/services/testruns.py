@@ -248,7 +248,42 @@ def get_test_run_service(db, run_name: str, metric: Optional[str] = None, status
         run = db.get_run_by_name(run_name)
         if not run:
             raise HTTPException(status_code=404, detail="Run not found")
+        timeline = db.get_run_timeline(run_name) or []
+            
+        if timeline:
+            events_by_plan = {}
+            total_seconds = 0
 
+            for e in timeline:
+                events_by_plan.setdefault(e.plan_name, []).append(e)
+
+                for plan_events in events_by_plan.values():
+                    start_times = [
+                        datetime.fromisoformat(e.prompt_ts).timestamp()
+                        for e in plan_events if e.prompt_ts
+                    ]
+
+                    end_times = [
+                        datetime.fromisoformat(e.response_ts).timestamp()
+                        for e in plan_events if e.response_ts
+                    ]
+
+                    if start_times and end_times:
+                        total_seconds += (max(end_times) - min(start_times))
+
+                duration_ms = int(total_seconds * 1000)    
+
+            scores = []
+            for e in timeline:
+                if e.evaluation_score is not None:
+                    scores.append(float(e.evaluation_score))
+
+            average_score = (
+                round(sum(scores) / len(scores), 4)
+                if scores
+                else None
+            )
+            print(average_score)
         domain_name = None
         if getattr(run, "target_id", None):
             target = db.get_target_by_id(run.target_id)
@@ -262,9 +297,10 @@ def get_test_run_service(db, run_name: str, metric: Optional[str] = None, status
             domain=domain_name,
             status=run.status,
             start_ts=run.start_ts,
-            end_ts=run.end_ts
+            end_ts=run.end_ts,
+            average_score=average_score,
         )
-
+        print(f"Run summary: {summary}")
         details = db.get_all_run_details_by_run_name(run_name)
 
         details_response = []
