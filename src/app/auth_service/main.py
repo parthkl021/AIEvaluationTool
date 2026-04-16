@@ -10,9 +10,12 @@ from contextlib import asynccontextmanager
 from urllib.parse import urlencode
 import logging
 import os
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 AUTH_BASE_PATH = os.getenv("AUTH_BASE_PATH", "/auth").strip()
 if AUTH_BASE_PATH in {"", "/"}:
@@ -62,6 +65,12 @@ tdms_assets_dir = os.path.abspath(
 )
 if os.path.isdir(tdms_assets_dir):
     app.mount("/web-assets", StaticFiles(directory=tdms_assets_dir), name="web-assets")
+    if AUTH_BASE_PATH:
+        app.mount(
+            f"{AUTH_BASE_PATH}/web-assets",
+            StaticFiles(directory=tdms_assets_dir),
+            name="web-assets-prefixed",
+        )
 
 raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "")
 cors_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
@@ -448,6 +457,27 @@ async def web_logout(
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
     return response
+
+
+def add_prefixed_route_alias(path: str, endpoint, *, methods: list[str], **kwargs) -> None:
+    if not AUTH_BASE_PATH:
+        return
+
+    app.add_api_route(
+        f"{AUTH_BASE_PATH}{path}",
+        endpoint,
+        methods=methods,
+        include_in_schema=False,
+        **kwargs,
+    )
+
+
+add_prefixed_route_alias("/login", login, methods=["POST"])
+add_prefixed_route_alias("/refresh", refresh_token, methods=["POST"])
+add_prefixed_route_alias("/logout", logout, methods=["POST"])
+add_prefixed_route_alias("/web/login", web_login, methods=["GET"], response_class=HTMLResponse)
+add_prefixed_route_alias("/web/portal", web_portal, methods=["GET"], response_class=HTMLResponse)
+add_prefixed_route_alias("/web/logout", web_logout, methods=["GET"])
 
 if __name__ == "__main__":
     import uvicorn
