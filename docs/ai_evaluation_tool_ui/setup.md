@@ -1,6 +1,6 @@
 # UI Setup
 
-Use this page to start the Test Case Execution Dashboard locally.
+Use this page to start the Test Case Execution Dashboard and TDMS locally.
 
 The dashboard has two parts:
 
