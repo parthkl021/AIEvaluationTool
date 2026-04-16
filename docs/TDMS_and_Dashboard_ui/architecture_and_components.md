@@ -2,6 +2,12 @@
 
 TDMS and the Test Case Execution Dashboard share authentication, core data models, and database state, while serving different operational needs.
 
+In the non-Docker local deployment:
+
+- NGINX serves `2` frontend UIs (TDMS and Dashboard)
+- Auth backend serves the centralized login page
+- Backends run as local Python services
+
 ## Runtime Architecture
 
 ```text
@@ -12,6 +18,8 @@ Dashboard Frontend (CRA/React) --> Dashboard Backend (FastAPI) -->
 Both frontends <-------------------- Auth Service (FastAPI)
 Dashboard Backend <----------------> Interface Manager (FastAPI)
 Dashboard Frontend <---------------> Dashboard WebSocket (/ws/test-run)
+
+NGINX serves TDMS UI (port 8080) and Dashboard UI (port 3000)
 ```
 
 ## Core Components

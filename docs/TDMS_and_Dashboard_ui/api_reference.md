@@ -9,6 +9,11 @@ This page summarizes the main endpoints used by TDMS and dashboard UI clients.
 - Auth service: `http://localhost:7500`
 - Dashboard WebSocket: `ws://localhost:7000/ws/test-run`
 
+UI URLs (when served via NGINX):
+
+- TDMS UI: `http://localhost:8080`
+- Dashboard UI: `http://localhost:3000`
+
 ## Auth Service Endpoints
 
 - `POST /login`

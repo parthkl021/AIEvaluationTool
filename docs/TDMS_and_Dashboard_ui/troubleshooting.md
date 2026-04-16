@@ -28,6 +28,43 @@ Checks:
 - verify value points to the dashboard backend (example: `http://localhost:7000`)
 - if TDMS links or current-user calls fail, also set `REACT_APP_TDMS_API_BASE_URL=http://localhost:7250`
 
+## NGINX Serves Old UI Content
+
+Symptoms:
+
+- UI changes not visible after deployment
+
+Checks:
+
+- rebuild the UI (`npm run build`)
+- re-copy build artifacts to NGINX root directories
+- clear browser cache and hard refresh
+- verify NGINX root path points to correct folder
+
+## NGINX Route 404 On Page Refresh
+
+Symptoms:
+
+- direct refresh of routes like `/dashboard` or `/test-runs/...` returns `404`
+
+Checks:
+
+- verify NGINX `location /` uses `try_files $uri $uri/ /index.html;`
+- run `sudo nginx -t` and reload NGINX after config edits
+
+## Cross-UI Navigation Opens Wrong URL
+
+Symptoms:
+
+- TDMS `Home` opens wrong dashboard URL
+- Dashboard `Test Data` link points to wrong TDMS URL
+
+Checks:
+
+- TDMS build env: `VITE_TEST_RUNS_HOME_URL`
+- Dashboard build env: `REACT_APP_TEST_DATA_URL`
+- rebuild both UIs after changing these environment values
+
 ## TDMS Loads But Data APIs Fail
 
 Symptoms:

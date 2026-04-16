@@ -16,6 +16,11 @@ Auth service role-based default routing:
 - `admin`, `manager` -> Test Case Execution Dashboard (`http://localhost:3000` by default)
 - `curator`, `viewer` -> TDMS (`http://localhost:8080/dashboard` by default)
 
+When using NGINX-hosted UIs, set these on auth-service startup:
+
+- `TCE_APP_URL` (dashboard UI URL)
+- `TDMS_APP_URL` (TDMS UI URL)
+
 ## Default Users
 
 | Role | Username | Password |

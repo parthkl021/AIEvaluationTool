@@ -1,28 +1,38 @@
-# TDMS And Dashboard Setup
+# Local Setup (No Docker) With NGINX
 
-Use this page to run TDMS and the Test Case Execution Dashboard together in local development.
+Use this guide to run TDMS and the Test Case Execution Tool (Dashboard) locally without Docker, with both frontend UIs served by NGINX.
 
-The integrated setup includes six services:
+## UI And Service Matrix
 
-- TDMS backend
-- TDMS frontend
-- Dashboard backend
-- Dashboard frontend
-- Auth service
-- Interface manager
+### Frontend UIs
+
+- `TDMS UI` (Vite build output: `dist/`)
+- `Test Case Execution Dashboard UI` (CRA build output: `build/`)
+
+### Other User-Facing Web Interface
+
+- `Central Login UI` is served by the auth backend at `/web/login` (no separate frontend build needed)
+
+### Backend Services
+
+- `auth-service` (`localhost:7500`)
+- `tdms-backend` (`localhost:7250`)
+- `dashboard-backend` (`localhost:7000` from `config.json`)
+- `interface-manager` (`localhost:8000`)
 
 ## Prerequisites
 
 - Python `3.10+`
 - Node.js `20.19+` or `22.12+`
 - npm
-- Chrome browser (for interface manager web automation use cases)
+- NGINX
+- Chrome browser (needed for interface-manager web automation scenarios)
 
-## One-Time Configuration
+## Step 1: Configure Root `config.json`
 
-Update repository root [`config.json`](../../config.json) for database and ports.
+Update repository root [`config.json`](../../config.json).
 
-SQLite example:
+For local SQLite:
 
 ```json
 {
@@ -38,7 +48,7 @@ SQLite example:
 }
 ```
 
-MariaDB example:
+For local MariaDB:
 
 ```json
 {
@@ -58,15 +68,15 @@ MariaDB example:
 }
 ```
 
-Notes:
+Important:
 
 - TDMS backend reads `db.engine`.
 - Dashboard backend reads `db.engine_type`.
-- Keeping both keys aligned avoids configuration drift.
+- Keep both keys aligned.
 
-## Install Dependencies
+## Step 2: Install Dependencies
 
-Install Python dependencies:
+From repository root:
 
 ```bash
 pip install -r requirements.txt
@@ -75,84 +85,161 @@ pip install -r src/app/auth_service/requirements.txt
 pip install -r src/app/interface_manager/requirements.txt
 ```
 
-Install frontend dependencies:
+Install UI dependencies:
 
 ```bash
 cd src/app/TDMS/front-end && npm install
 cd ../../TestCaseExecutorDashboard/front-end && npm install
 ```
 
-## Start Services
+## Step 3: Run Backend Services Locally
 
 Start each service in a separate terminal.
 
-1. Auth service (`http://localhost:7500`):
+1. Auth service:
 
 ```bash
 cd src/app/auth_service
+TCE_APP_URL=http://localhost:3000 \
+TDMS_APP_URL=http://localhost:8080/dashboard \
 python main.py
 ```
 
-2. TDMS backend (`http://localhost:7250`):
+2. TDMS backend:
 
 ```bash
 cd src/app/TDMS/back-end
 python main.py
 ```
 
-3. Dashboard backend (`http://localhost:7000` by default from `config.json`):
+3. Dashboard backend (test case execution backend):
 
 ```bash
 cd src/app/TestCaseExecutorDashboard/back-end
 python main.py
 ```
 
-4. Interface manager (`http://localhost:8000`):
+4. Interface manager:
 
 ```bash
 cd src/app/interface_manager
 python main.py
 ```
 
-5. TDMS frontend (typically `http://localhost:8080`):
+## Step 4: Build Both UIs For NGINX
 
-```bash
-cd src/app/TDMS/front-end
-npm run dev
-```
+### TDMS UI build
 
-6. Dashboard frontend (typically `http://localhost:3000`):
+Create `src/app/TDMS/front-end/.env.production`:
 
-`REACT_APP_API_BASE_URL` is required for the dashboard frontend.
-
-```bash
-cd src/app/TestCaseExecutorDashboard/front-end
-REACT_APP_API_BASE_URL=http://localhost:7000 \
-REACT_APP_TDMS_API_BASE_URL=http://localhost:7250 \
-REACT_APP_AUTH_SERVICE_URL=http://localhost:7500 \
-npm start
-```
-
-Optional TDMS frontend environment overrides:
-
-```bash
-# defaults are already set in code if omitted
+```env
 VITE_API_BASE_URL=http://localhost:7250
 VITE_AUTH_SERVICE_URL=http://localhost:7500
 VITE_TEST_RUNS_HOME_URL=http://localhost:3000/
 ```
 
+Build:
+
+```bash
+cd src/app/TDMS/front-end
+npm run build
+```
+
+### Dashboard UI build
+
+Create `src/app/TestCaseExecutorDashboard/front-end/.env.production`:
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:7000
+REACT_APP_AUTH_SERVICE_URL=http://localhost:7500
+REACT_APP_TDMS_API_BASE_URL=http://localhost:7250
+REACT_APP_TEST_DATA_URL=http://localhost:8080/dashboard
+REACT_APP_USER_LIST_URL=http://localhost:8080/users
+```
+
+Build:
+
+```bash
+cd src/app/TestCaseExecutorDashboard/front-end
+npm run build
+```
+
+## Step 5: Place Build Artifacts For NGINX
+
+Example deployment directories:
+
+- `/var/www/aievaluation/tdms-ui`
+- `/var/www/aievaluation/dashboard-ui`
+
+Copy files:
+
+```bash
+sudo mkdir -p /var/www/aievaluation/tdms-ui /var/www/aievaluation/dashboard-ui
+sudo rsync -a --delete src/app/TDMS/front-end/dist/ /var/www/aievaluation/tdms-ui/
+sudo rsync -a --delete src/app/TestCaseExecutorDashboard/front-end/build/ /var/www/aievaluation/dashboard-ui/
+```
+
+## Step 6: Configure NGINX For Both UIs
+
+Create `/etc/nginx/conf.d/aievaluation-ui.conf`:
+
+```nginx
+server {
+    listen 8080;
+    server_name _;
+
+    root /var/www/aievaluation/tdms-ui;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+}
+
+server {
+    listen 3000;
+    server_name _;
+
+    root /var/www/aievaluation/dashboard-ui;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+}
+```
+
+Reload NGINX:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
 ## Access URLs
 
-- Auth login: `http://localhost:7500/web/login`
-- TDMS: `http://localhost:8080`
-- Dashboard: `http://localhost:3000`
-- TDMS backend health: `http://localhost:7250/`
+- TDMS UI via NGINX: `http://localhost:8080`
+- Dashboard UI via NGINX: `http://localhost:3000`
+- Central login UI: `http://localhost:7500/web/login`
 
-## Setup Validation Checklist
+## Validation Checklist
 
-- Login page opens from the auth service.
-- TDMS dashboard cards show counts.
-- Dashboard test runs page loads without auth errors.
-- New run form loads targets, plans, and filters.
-- Interface manager is reachable when run execution starts.
+- `http://localhost:8080/healthz` returns `ok`.
+- `http://localhost:3000/healthz` returns `ok`.
+- TDMS login redirects to auth and returns correctly.
+- Dashboard login redirects to auth and returns correctly.
+- TDMS `Home` link opens dashboard.
+- Dashboard `Test Data` link opens TDMS.
+- New run and continue run flows can load filters and start execution.
