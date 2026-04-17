@@ -121,8 +121,10 @@ def main():
         return
     if config['interface_manager']['docker']:
         interface_manager_url = config.get("interface_manager", {}).get("base_url", "http://interface-manager:8000")
+        selenium_mode = config.get("selenium_mode", {}).get("selenium_mode", "remote")
     else:
         interface_manager_url = "http://localhost:8000"
+        selenium_mode = config.get("selenium_mode", {}).get("selenium_mode", "local")
 
     # setting up the database connection
     # db_url = f"mariadb+mariadbconnector://{config['database']['user']}:{config['database']['password']}@{config['database']['host']}:{config['database']['port']}/{config['database']['database']}"
@@ -445,7 +447,8 @@ def main():
                         "application_name": application_name,
                         "application_type": application_type,
                         "agent_name": agent_name,
-                        "application_url": application_url
+                        "application_url": application_url,
+                        "selenium_mode": selenium_mode
                     })
                     client.apply_server_config()
 
@@ -454,7 +457,20 @@ def main():
                         db.add_or_update_conversation(conversation=conv)
 
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.
@@ -496,7 +512,7 @@ def main():
                     return
                 
                 # Verify that the metric is part of the test plan
-                is_metric_in_plan = db.is_metric_in_testplan(metric_name=metric_name, plan_name=plan_name)
+                is_metric_in_plan = db.is_metric_in_testplan(metric_name=metric_name.split("/")[0], plan_name=plan_name)
                 if not is_metric_in_plan:
                     logger.error(f"Metric '{metric_name}' (ID: {args.metric_id}) is not part of the test plan '{plan_name}' (ID: {args.plan_id}).")
                     return
@@ -530,7 +546,8 @@ def main():
                     "application_name": application_name,
                     "application_type": application_type,
                     "agent_name": agent_name,
-                    "application_url": application_url
+                    "application_url": application_url,
+                    "selenium_mode": selenium_mode
                 })
                 client.apply_server_config()
 
@@ -568,7 +585,20 @@ def main():
                         db.add_or_update_conversation(conversation=conv)
 
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.
@@ -626,7 +656,8 @@ def main():
                     "application_name": application_name,
                     "application_type": application_type,
                     "agent_name": agent_name,
-                    "application_url": application_url
+                    "application_url": application_url,
+                    "selenium_mode": selenium_mode
                 })
                 client.apply_server_config()
 
@@ -665,7 +696,20 @@ def main():
 
                         # send the prompt to the agent via the interface manager client
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.

@@ -82,15 +82,16 @@ def send_prompt(app_name: str, chat_id: int, prompt_list: List[str]) -> list[dic
     cfg = load_config()
     url = cfg.get("application_url", "UNKNOWN")
     app_name = app_name.lower()
+    chat_cfg = load_xpaths()["applications"][app_name]["ChatPage"]
 
     driver = driver_manager.get_driver(app_name, url)
 
     # Ensure login
-    logout_cfg = load_xpaths()["applications"][app_name]["LogoutPage"]
-    print("sending xpath: ", logout_cfg["send_element"])
-    login_ok = is_logged_in(driver, send_element=logout_cfg["send_element"]) or login_webapp(app_name)
-    print("after function running xpath: ", logout_cfg["send_element"])
-    print("login_ok:", login_ok)
+    # logout_cfg = load_xpaths()["applications"][app_name]["LogoutPage"]
+    # logger.info("sending xpath: ", logout_cfg["send_element"])
+    login_ok = is_logged_in(driver, send_element=chat_cfg["send_button_element"]) or login_webapp(app_name)
+    logger.info("after function running xpath: ", chat_cfg["send_button_element"])
+    logger.info("login_ok:", login_ok)
     for prompt in prompt_list:
         result = {"chat_id": chat_id, "prompt": prompt, "response": "[Not available]"}
         if login_ok:
