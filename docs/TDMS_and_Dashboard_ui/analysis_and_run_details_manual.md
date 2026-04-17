@@ -2,7 +2,7 @@
 
 Use this page to inspect run output, open testcase details, trigger analysis, and download reports.
 
-![Test run details](../../screenshots/TRDB_test_run_details.png)
+![Test run details](../../screenshots/Cerai-Test-Run-Details.png)
 
 ## Run Details Page
 
@@ -44,7 +44,7 @@ Filters available in table headers:
 
 Click a testcase row to open full conversation detail modal.
 
-![Single testcase details](../../screenshots/TRDB_single_testcase_eval_details.png)
+![Single testcase details](../../screenshots/TestEvaluationDetails.png)
 
 Modal-level information includes:
 

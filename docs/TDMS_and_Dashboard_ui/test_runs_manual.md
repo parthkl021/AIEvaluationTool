@@ -2,7 +2,7 @@
 
 Use this page to understand the Test Runs home screen in the Test Case Execution Dashboard.
 
-![Test runs overview](../../screenshots/TRDB_first_page.png)
+![Test runs overview](../../screenshots/Test-Runs-Page.png)
 
 ## Where This Screen Is
 
