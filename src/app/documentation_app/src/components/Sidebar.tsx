@@ -27,10 +27,8 @@ interface SidebarProps {
 const sectionIcons: Record<DocSectionId, React.ComponentType<{ className?: string }>> = {
   overview: BookOpen,
   'docker-setup': Container,
-  'ai-evaluation-tool-cli': TerminalSquare,
-  tdms: Database,
   'tdms-and-dashboard-ui': LayoutDashboard,
-  'ai-evaluation-tool-ui': LayoutDashboard,
+  'ai-evaluation-tool-cli': TerminalSquare,
   pqet: Sparkles,
 };
 

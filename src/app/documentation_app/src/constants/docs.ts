@@ -22,9 +22,7 @@ export type DocSectionId =
   | 'overview'
   | 'docker-setup'
   | 'ai-evaluation-tool-cli'
-  | 'tdms'
   | 'tdms-and-dashboard-ui'
-  | 'ai-evaluation-tool-ui'
   | 'pqet';
 
 function buildRawRepositoryUrl(repoPath: string) {
@@ -148,29 +146,7 @@ const docsConfig = {
     url: buildRawDocUrl('ai_evaluation_tool_cli/analysis_and_report.md'),
     githubUrl: buildGithubDocUrl('ai_evaluation_tool_cli/analysis_and_report.md'),
   },
-  'tdms-home': {
-    title: 'TDMS',
-    navTitle: 'Overview',
-    path: 'tdms/index.md',
-    sectionId: 'tdms',
-    url: buildRawDocUrl('tdms/index.md'),
-    githubUrl: buildGithubDocUrl('tdms/index.md'),
-  },
-  'tdms-setup': {
-    title: 'TDMS Setup',
-    navTitle: 'Setup',
-    path: 'tdms/setup.md',
-    sectionId: 'tdms',
-    url: buildRawDocUrl('tdms/setup.md'),
-    githubUrl: buildGithubDocUrl('tdms/setup.md'),
-  },
-  'tdms-access': {
-    title: 'Access And Roles',
-    path: 'tdms/access_and_roles.md',
-    sectionId: 'tdms',
-    url: buildRawDocUrl('tdms/access_and_roles.md'),
-    githubUrl: buildGithubDocUrl('tdms/access_and_roles.md'),
-  },
+
   'tdms-dashboard-home': {
     title: 'TDMS And Dashboard UI',
     navTitle: 'Overview',
@@ -251,30 +227,7 @@ const docsConfig = {
     url: buildRawDocUrl('TDMS_and_Dashboard_ui/troubleshooting.md'),
     githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/troubleshooting.md'),
   },
-  'ui-home': {
-    title: 'AI Evaluation Tool UI',
-    navTitle: 'Overview',
-    path: 'ai_evaluation_tool_ui/index.md',
-    sectionId: 'ai-evaluation-tool-ui',
-    url: buildRawDocUrl('ai_evaluation_tool_ui/index.md'),
-    githubUrl: buildGithubDocUrl('ai_evaluation_tool_ui/index.md'),
-  },
-  'ui-setup': {
-    title: 'UI Setup',
-    navTitle: 'Setup',
-    path: 'ai_evaluation_tool_ui/setup.md',
-    sectionId: 'ai-evaluation-tool-ui',
-    url: buildRawDocUrl('ai_evaluation_tool_ui/setup.md'),
-    githubUrl: buildGithubDocUrl('ai_evaluation_tool_ui/setup.md'),
-  },
-  'ui-dashboard': {
-    title: 'Using The Dashboard',
-    navTitle: 'Dashboard Usage',
-    path: 'ai_evaluation_tool_ui/using_the_dashboard.md',
-    sectionId: 'ai-evaluation-tool-ui',
-    url: buildRawDocUrl('ai_evaluation_tool_ui/using_the_dashboard.md'),
-    githubUrl: buildGithubDocUrl('ai_evaluation_tool_ui/using_the_dashboard.md'),
-  },
+
   'pqet-home': {
     title: 'PQET',
     navTitle: 'Overview',
@@ -315,16 +268,8 @@ export const DOC_SECTIONS: DocSection[] = [
     title: 'Docker Setup',
     docIds: ['docker-setup-home', 'docker-setup-config', 'docker-setup-gpu', 'docker-setup-run'],
   },
-  {
-    id: 'ai-evaluation-tool-cli',
-    title: 'AI Evaluation Tool CLI',
-    docIds: ['cli-home', 'cli-initial-setup', 'cli-gpu-setup', 'cli-importer-execution', 'cli-analysis-report'],
-  },
-  {
-    id: 'tdms',
-    title: 'TDMS',
-    docIds: ['tdms-home', 'tdms-setup', 'tdms-access'],
-  },
+  
+
   {
     id: 'tdms-and-dashboard-ui',
     title: 'TDMS + Dashboard UI',
@@ -342,10 +287,10 @@ export const DOC_SECTIONS: DocSection[] = [
     ],
   },
   {
-    id: 'ai-evaluation-tool-ui',
-    title: 'AI Evaluation Tool UI',
-    docIds: ['ui-home', 'ui-setup', 'ui-dashboard'],
-  },
+      id: 'ai-evaluation-tool-cli',
+      title: 'AI Evaluation Tool CLI',
+      docIds: ['cli-home', 'cli-initial-setup', 'cli-gpu-setup', 'cli-importer-execution', 'cli-analysis-report'],
+    },
   {
     id: 'pqet',
     title: 'PQET',
