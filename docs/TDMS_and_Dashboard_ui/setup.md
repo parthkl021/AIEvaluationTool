@@ -33,7 +33,90 @@ You can choose either:
 - NGINX (required only for NGINX mode)
 - Chrome browser (needed for interface-manager web automation scenarios)
 
-## Step 1: Configure Root `config.json`
+## Step 1: Create Required `.env` Files
+
+Create and populate all required `.env` files before starting services.
+
+### 1.1 Root `.env` (repository root)
+
+This is used by shared runtime components (for example `interface_manager` and API key based providers).
+
+```bash
+cp .env.example .env
+```
+
+Example values in root `.env`:
+
+```env
+OLLAMA_URL=http://localhost:12434
+GPU_URL=http://localhost:16000
+LLM_AS_JUDGE_MODEL=
+PERSPECTIVE_API_KEY=
+SARVAM_API_KEY=
+GEMINI_API_KEY=
+OPENAI_API_KEY=
+```
+
+### 1.2 TDMS frontend `.env`
+
+Create `src/app/TDMS/front-end/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:7250
+VITE_AUTH_SERVICE_URL=http://localhost:7500
+```
+
+### 1.3 Dashboard frontend `.env`
+
+Create `src/app/TestCaseExecutorDashboard/front-end/.env`:
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:7000
+REACT_APP_AUTH_SERVICE_URL=http://localhost:7500
+```
+
+### 1.4 Auth service `.env`
+
+Create `src/app/auth_service/.env`:
+
+```env
+AUTH_SECRET_KEY=@cerai
+AUTH_REFRESH_SECRET_KEY=@cerai_refresh
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=aievaluation
+TCE_APP_URL=http://localhost:3000
+TDMS_APP_URL=http://localhost:8080/dashboard
+CORS_ALLOW_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:7250
+COOKIE_SECURE=false
+COOKIE_SAMESITE=lax
+```
+
+### 1.5 Strategy `.env`
+
+For strategy defaults used by `src/lib/strategy/utils_new.py`, keep `src/lib/strategy/.env` present.
+
+```bash
+cp src/lib/strategy/.env.example src/lib/strategy/.env
+```
+
+Expected values:
+
+```env
+DATA_PATH=data/
+DEFAULT_VALUES_PATH=data/defaults.json
+EXAMPLES_DIR=data/examples/
+IMAGES_DIR=data/images/
+```
+
+Important:
+
+- Keep all runtime configuration in these `.env` files.
+- Do not pass `VITE_*` or `REACT_APP_*` variables inline in run commands.
+
+## Step 2: Configure Root `config.json`
 
 Update repository root [`config.json`](../../config.json).
 
@@ -76,7 +159,7 @@ Important:
 - TDMS backend and Dashboard backend reads `db.engine`.
 - Keep both keys aligned.
 
-## Step 2: Install Dependencies
+## Step 3: Install Dependencies
 
 From repository root:
 
@@ -91,7 +174,7 @@ cd src/app/TDMS/front-end && npm install
 cd ../../TestCaseExecutorDashboard/front-end && npm install
 ```
 
-## Step 3: Run Backend Services Locally
+## Step 4: Run Backend Services Locally
 
 Start each service in a separate terminal.
 
@@ -99,8 +182,6 @@ Start each service in a separate terminal.
 
 ```bash
 cd src/app/auth_service
-TCE_APP_URL=http://localhost:3000 \
-TDMS_APP_URL=http://localhost:8080/dashboard \
 python main.py
 ```
 
@@ -125,7 +206,7 @@ cd src/app/interface_manager
 python main.py
 ```
 
-## Step 4: Choose Frontend Run Mode
+## Step 5: Choose Frontend Run Mode
 
 ### Option A: Run Without NGINX (Direct Dev Servers)
 
@@ -135,9 +216,6 @@ This is best for development and frequent UI changes.
 
 ```bash
 cd src/app/TDMS/front-end
-VITE_API_BASE_URL=http://localhost:7250 \
-VITE_AUTH_SERVICE_URL=http://localhost:7500 \
-VITE_TEST_RUNS_HOME_URL=http://localhost:3000/ \
 npm run dev
 ```
 
@@ -145,11 +223,6 @@ npm run dev
 
 ```bash
 cd src/app/TestCaseExecutorDashboard/front-end
-REACT_APP_API_BASE_URL=http://localhost:7000 \
-REACT_APP_AUTH_SERVICE_URL=http://localhost:7500 \
-REACT_APP_TDMS_API_BASE_URL=http://localhost:7250 \
-REACT_APP_TEST_DATA_URL=http://localhost:8080/dashboard \
-REACT_APP_USER_LIST_URL=http://localhost:8080/users \
 npm start
 ```
 
@@ -163,17 +236,11 @@ Access URLs in this mode:
 
 Use this when you want static UI hosting and production-like frontend serving.
 
-#### Step 4.1: Build Both UIs For NGINX
+#### Step 5.1: Build Both UIs For NGINX
+
+Use the `.env` files created in Step 1.
 
 ### TDMS UI build
-
-Create `src/app/TDMS/front-end/.env.production`:
-
-```env
-VITE_API_BASE_URL=http://localhost:7250
-VITE_AUTH_SERVICE_URL=http://localhost:7500
-VITE_TEST_RUNS_HOME_URL=http://localhost:3000/
-```
 
 Build:
 
@@ -184,16 +251,6 @@ npm run build
 
 ### Dashboard UI build
 
-Create `src/app/TestCaseExecutorDashboard/front-end/.env.production`:
-
-```env
-REACT_APP_API_BASE_URL=http://localhost:7000
-REACT_APP_AUTH_SERVICE_URL=http://localhost:7500
-REACT_APP_TDMS_API_BASE_URL=http://localhost:7250
-REACT_APP_TEST_DATA_URL=http://localhost:8080/dashboard
-REACT_APP_USER_LIST_URL=http://localhost:8080/users
-```
-
 Build:
 
 ```bash
@@ -201,7 +258,7 @@ cd src/app/TestCaseExecutorDashboard/front-end
 npm run build
 ```
 
-#### Step 4.2: Place Build Artifacts For NGINX
+#### Step 5.2: Place Build Artifacts For NGINX
 
 Example deployment directories:
 
@@ -216,7 +273,7 @@ sudo rsync -a --delete src/app/TDMS/front-end/dist/ /var/www/aievaluation/tdms-u
 sudo rsync -a --delete src/app/TestCaseExecutorDashboard/front-end/build/ /var/www/aievaluation/dashboard-ui/
 ```
 
-#### Step 4.3: Configure NGINX For Both UIs
+#### Step 5.3: Configure NGINX For Both UIs
 
 Create `/etc/nginx/conf.d/aievaluation-ui.conf`:
 
