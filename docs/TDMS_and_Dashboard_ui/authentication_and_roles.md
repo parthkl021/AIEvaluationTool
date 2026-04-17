@@ -3,11 +3,12 @@
 TDMS and dashboard use a centralized auth service with JWT-based session handling.
 
 ## Login Flow
-
 - TDMS login route redirects users to `AUTH_SERVICE_URL/web/login`.
 - Dashboard login route also redirects to the same auth service.
 - On successful login, auth returns `access_token`, `refresh_token`, `user_name`, and `role`.
 - Frontends store tokens in local storage and attach the bearer token to API calls.
+
+![Dashboard after successful login](../../screenshots/loginPage.png)
 
 ## Redirect Behavior
 

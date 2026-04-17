@@ -15,7 +15,7 @@ export interface DocSection {
 
 const GITHUB_OWNER = 'cerai-iitm';
 const GITHUB_REPO = 'AIEvaluationTool';
-const GITHUB_BRANCH = 'dev';
+const GITHUB_BRANCH = 'varun_dev';
 const GITHUB_DOCS_PATH = 'docs';
 
 export type DocSectionId =
@@ -23,6 +23,7 @@ export type DocSectionId =
   | 'docker-setup'
   | 'ai-evaluation-tool-cli'
   | 'tdms'
+  | 'tdms-and-dashboard-ui'
   | 'ai-evaluation-tool-ui'
   | 'pqet';
 
@@ -170,6 +171,86 @@ const docsConfig = {
     url: buildRawDocUrl('tdms/access_and_roles.md'),
     githubUrl: buildGithubDocUrl('tdms/access_and_roles.md'),
   },
+  'tdms-dashboard-home': {
+    title: 'TDMS And Dashboard UI',
+    navTitle: 'Overview',
+    path: 'TDMS_and_Dashboard_ui/index.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/index.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/index.md'),
+  },
+  'tdms-dashboard-setup': {
+    title: 'Local Setup (No Docker)',
+    navTitle: 'Setup',
+    path: 'TDMS_and_Dashboard_ui/setup.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/setup.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/setup.md'),
+  },
+  'tdms-dashboard-architecture': {
+    title: 'Architecture And Components',
+    navTitle: 'Architecture',
+    path: 'TDMS_and_Dashboard_ui/architecture_and_components.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/architecture_and_components.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/architecture_and_components.md'),
+  },
+  'tdms-dashboard-auth': {
+    title: 'Authentication And Roles',
+    navTitle: 'Auth And Roles',
+    path: 'TDMS_and_Dashboard_ui/authentication_and_roles.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/authentication_and_roles.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/authentication_and_roles.md'),
+  },
+  'tdms-dashboard-manual-tdms': {
+    title: 'TDMS Dashboard User Manual',
+    navTitle: 'TDMS Dashboard',
+    path: 'TDMS_and_Dashboard_ui/tdms_dashboard_manual.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/tdms_dashboard_manual.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/tdms_dashboard_manual.md'),
+  },
+  'tdms-dashboard-manual-testruns': {
+    title: 'Test Runs User Manual',
+    navTitle: 'Test Runs',
+    path: 'TDMS_and_Dashboard_ui/test_runs_manual.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/test_runs_manual.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/test_runs_manual.md'),
+  },
+  'tdms-dashboard-manual-run-config': {
+    title: 'Run Configuration User Manual',
+    navTitle: 'Run Configuration',
+    path: 'TDMS_and_Dashboard_ui/run_configuration_manual.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/run_configuration_manual.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/run_configuration_manual.md'),
+  },
+  'tdms-dashboard-manual-analysis': {
+    title: 'Analysis And Run Details User Manual',
+    navTitle: 'Analysis And Details',
+    path: 'TDMS_and_Dashboard_ui/analysis_and_run_details_manual.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/analysis_and_run_details_manual.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/analysis_and_run_details_manual.md'),
+  },
+  'tdms-dashboard-api': {
+    title: 'API Reference',
+    navTitle: 'API Reference',
+    path: 'TDMS_and_Dashboard_ui/api_reference.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/api_reference.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/api_reference.md'),
+  },
+  'tdms-dashboard-troubleshooting': {
+    title: 'Troubleshooting',
+    navTitle: 'Troubleshooting',
+    path: 'TDMS_and_Dashboard_ui/troubleshooting.md',
+    sectionId: 'tdms-and-dashboard-ui',
+    url: buildRawDocUrl('TDMS_and_Dashboard_ui/troubleshooting.md'),
+    githubUrl: buildGithubDocUrl('TDMS_and_Dashboard_ui/troubleshooting.md'),
+  },
   'ui-home': {
     title: 'AI Evaluation Tool UI',
     navTitle: 'Overview',
@@ -243,6 +324,22 @@ export const DOC_SECTIONS: DocSection[] = [
     id: 'tdms',
     title: 'TDMS',
     docIds: ['tdms-home', 'tdms-setup', 'tdms-access'],
+  },
+  {
+    id: 'tdms-and-dashboard-ui',
+    title: 'TDMS + Dashboard UI',
+    docIds: [
+      'tdms-dashboard-home',
+      'tdms-dashboard-setup',
+      'tdms-dashboard-architecture',
+      'tdms-dashboard-auth',
+      'tdms-dashboard-manual-tdms',
+      'tdms-dashboard-manual-testruns',
+      'tdms-dashboard-manual-run-config',
+      'tdms-dashboard-manual-analysis',
+      'tdms-dashboard-api',
+      'tdms-dashboard-troubleshooting',
+    ],
   },
   {
     id: 'ai-evaluation-tool-ui',

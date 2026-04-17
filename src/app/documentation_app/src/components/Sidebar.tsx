@@ -29,6 +29,7 @@ const sectionIcons: Record<DocSectionId, React.ComponentType<{ className?: strin
   'docker-setup': Container,
   'ai-evaluation-tool-cli': TerminalSquare,
   tdms: Database,
+  'tdms-and-dashboard-ui': LayoutDashboard,
   'ai-evaluation-tool-ui': LayoutDashboard,
   pqet: Sparkles,
 };
