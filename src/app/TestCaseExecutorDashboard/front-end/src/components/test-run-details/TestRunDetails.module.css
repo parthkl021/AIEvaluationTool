@@ -549,7 +549,8 @@
   padding: 2px 8px 2px 8px; /* Match left card margin */
   display: flex;
   flex-direction: column;
-  height: 65vh;
+  height: 65vh; /* Match exact container height */
+  /* max-height: calc(100vh - 200px); Prevent overflow */
 }
 
 .resultsTable {

@@ -407,7 +407,7 @@ def get_all_test_runs_service(
 
             average_score = (
                 round(sum(scores) / len(scores), 4)
-                if scores
+                if scores 
                 else None
             )
             evaluation_ts = max(
