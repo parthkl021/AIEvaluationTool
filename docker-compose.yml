@@ -36,6 +36,8 @@ services:
       target: interface-manager
     container_name: aiet-interface-manager
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -88,6 +90,9 @@ services:
     depends_on:
       interface-manager:
         condition: service_healthy
+      sarvam-ai:
+        condition: service_started
+        required: false
     expose:
       - "7000"
     env_file:
@@ -102,6 +107,32 @@ services:
       interval: 20s
       timeout: 5s
       retries: 5
+
+  sarvam-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.app-backend
+      target: sarvam-ai
+    container_name: aiet-sarvam-ai
+    restart: unless-stopped
+    profiles: ["sarvam"]
+    expose:
+      - "16000"
+    environment:
+      - HF_HOME=/models
+      - HUGGINGFACE_HUB_TOKEN=${HF_TOKEN}
+      - NVIDIA_VISIBLE_DEVICES=all
+    env_file:
+      - .env
+    volumes:
+      - sarvam_models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   tdms-backend:
     build:
