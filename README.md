@@ -18,35 +18,6 @@ TDMS and the Dashboard run as a unified application layer behind a single Docker
 
 ![System Architecture](screenshots/Arch.jpg)
 
-```text
-┌───────────────────────────────────────────────────────────────┐
-│                        NGINX Gateway                          │
-│   /            /tdms/           /api/   /tdms-api/   /auth/   │
-└───────────────┬──────────────────┬──────────┬───────────────┬─┘
-                │                  │          │               │
-     ┌──────────▼──────────┐  ┌────▼─────┐  ┌─▼─────────┐ ┌───▼───────────┐
-     │ TCE Frontend        │  │ TDMS FE  │  │ TCE BE    │ │ TDMS Backend  │
-     │ (Dashboard UI)      │  │          │  │           │ │               │
-     └──────────┬──────────┘  └────┬─────┘  └────┬──────┘ └──────┬────────┘
-                │                  │             │               │
-                └──────────────┬───┴─────────────┴───────────────┘
-                               │
-                      ┌────────▼────────┐
-                      │   Auth Service  │
-                      └────────┬────────┘
-                               │
-                     ┌─────────▼──────────┐
-                     │ DB (MariaDB/SQLite)│
-                     └─────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │ Interface Manager   │
-                    │ + Selenium Browser  │
-                    └─────────────────────┘
-```
-
-For full architecture details, refer to the [official documentation](https://cerai-iitm.github.io/AIEvaluationTool/).
-
 ## 3. Configuration
 
 Docker reads runtime values from `.env` and application-level configuration from `config.json`.
