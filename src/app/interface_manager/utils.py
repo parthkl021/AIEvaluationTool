@@ -60,14 +60,25 @@ class DriverManager:
         # to turn off headless mode - remove the below line or comment it out.
         if mode == "True":
             opts.add_argument("--headless")
-        opts.add_argument(f"user-data-dir={self.profile_folder_path}")
         opts.add_experimental_option("excludeSwitches", ["enable-logging"])
 
+        cfg = load_config()
+        selenium_mode = str(cfg.get("selenium_mode", "local")).lower()
+        remote_url = cfg.get("selenium_remote_url", "http://selenium-browser:4444/wd/hub")
+
         try:
-            # service = Service(ChromeDriverManager().install())
-            # self.driver = webdriver.Chrome(service=service, options=opts)
-            # @bugfix: Use the below line to load driver faster -- Balayogi 12.01.2026
-            self.driver = webdriver.Chrome(options=opts)
+            if selenium_mode == "remote":
+                logger.info(f"Using Remote WebDriver at {remote_url}")
+                # opts.add_argument("--user-data-dir=/home/seluser/chrome-data")
+                self.driver = webdriver.Remote(
+                    command_executor=remote_url,
+                    options=opts
+                )
+            else:
+                opts.add_argument(f"user-data-dir={self.profile_folder_path}")
+                logger.info("Using local Chrome WebDriver")
+                self.driver = webdriver.Chrome(options=opts)
+
             self.driver.get(url)
             logger.info(f"Driver ready for {app_name}")
             return self.driver
@@ -75,6 +86,19 @@ class DriverManager:
             logger.error(f"Failed to start Chrome for {app_name}: {e}")
             self.driver = None
             raise
+
+        # try:
+        #     # service = Service(ChromeDriverManager().install())
+        #     # self.driver = webdriver.Chrome(service=service, options=opts)
+        #     # @bugfix: Use the below line to load driver faster -- Balayogi 12.01.2026
+        #     self.driver = webdriver.Chrome(options=opts)
+        #     self.driver.get(url)
+        #     logger.info(f"Driver ready for {app_name}")
+        #     return self.driver
+        # except WebDriverException as e:
+        #     logger.error(f"Failed to start Chrome for {app_name}: {e}")
+        #     self.driver = None
+        #     raise
 
     def _is_alive(self) -> bool:
         """Check if the cached driver is still valid."""
@@ -202,16 +226,26 @@ def retry_on_internet(max_attempts: int = 5, initial_delay: int = 3, max_delay: 
     return False
 
 
+# Function to identify selector type
+def get_selector_type(selector: str):
+    selector = selector.strip()
+
+    # XPath patterns
+    if selector.startswith("//") or selector.startswith("(//") or selector.startswith(".//"):
+        return By.XPATH
+
+    # Default → CSS
+    return By.CSS_SELECTOR
+
 # --------------------------------------------------------------------
 # UI Helpers
 # --------------------------------------------------------------------
 def is_logged_in(driver: webdriver.Chrome, send_element: str) -> bool:
     """Check if a user is logged in by verifying presence of a profile element."""
     try:
-        print("received xpath: ", send_element)
-        # print(driver.page_source)
+        by = get_selector_type(send_element)
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, send_element))
+            EC.presence_of_element_located((by, send_element))
         )
         return True
     except Exception as e:
@@ -302,6 +336,20 @@ def login_app(driver: webdriver.Chrome, app_name: str) -> bool:
         logout_cfg = app_cfg.get("LogoutPage")
         cred_cfg = load_creds()["applications"].get(app_name.lower(), {})
 
+        qr_cfg = app_cfg.get("ChatPage", {}).get("scan_qr_code_element")
+
+        if app_name.lower() == "whatsapp" or app_name.lower() == "whatsapp web" or app_name.lower() == "whatsapp_web":
+            try:
+                wait_for_login = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, qr_cfg))
+                )
+                logger.info(f"{app_name.upper()} requires QR code login. Please scan the QR code with your mobile app.")
+                time.sleep(60)
+                return True
+            except TimeoutException:
+                logger.error(f"QR code element not found for {app_name}")
+                return True
+
         if not login_cfg:
             logger.info(f"{app_name} has no LoginPage config → skipping login")
             return True
@@ -364,6 +412,7 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
     app_cfg = load_xpaths()["applications"][app_name.lower()]
     chat_cfg = app_cfg["ChatPage"]
     entity_name = cfg.get("agent_name")
+    contact_selection = "//span[@title='" + entity_name + "']"
 
     try:
         search_input_xpath = chat_cfg.get("contact_search_element") or chat_cfg.get("model_name_entry_element")
@@ -376,7 +425,13 @@ def search_entity(driver: webdriver.Chrome, app_name: str) -> bool:
         )
         search_box.clear()
         search_box.send_keys(entity_name)
-        search_box.send_keys(Keys.RETURN)
+        
+        time.sleep(5)
+
+        contact_select = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, contact_selection))
+        )
+        contact_select.click()
 
         logger.info(f"{app_name}: '{entity_name}' search successful")
         return True
@@ -497,255 +552,217 @@ def send_message_whatsapp(driver: webdriver.Chrome, prompt: str):
                 logger.error("Max chat retries reached. Aborting.")
                 return "No response received"
 
+def handle_farmerchat(driver, prompt):
+
+    cfg = load_xpaths()["applications"]["farmerchat"]["ChatPage"]
+
+    iframe_selector = cfg["shadow_root_element"]
+    textarea_selector = cfg["prompt_input_box_element"]
+    response_selector = cfg["agent_response_element"]
+    audio_selector = cfg["audio_message_element"]
+    mic_selector = cfg["mic_button_element"]
+    send_selector = cfg["send_button_element"]
+
+    shadow_host = get_shadow_host(driver, iframe_selector)
+
+    textarea = driver.execute_script("""
+        const host = arguments[0];
+        return host.shadowRoot.querySelector(arguments[1]);
+    """, shadow_host, textarea_selector)
+
+    if not textarea:
+        raise RuntimeError("Prompt input box not found")
+    
+    # To clear text area
+    textarea.send_keys(Keys.CONTROL + "a")
+    textarea.send_keys(Keys.DELETE)
+    
+    initial_count = driver.execute_script("""
+        const host = arguments[0];
+        return host.shadowRoot.querySelectorAll(arguments[1]).length;
+    """, shadow_host, response_selector)
+
+    textarea.send_keys(prompt)
+    textarea.send_keys(Keys.RETURN)
+
+    time.sleep(10)
+    
+    text = wait_for_new_shadow_text(driver, shadow_host, response_selector, initial_count)
+
+    return {
+        "type": "text",
+        "content": text
+    }
+
+
+APP_HANDLERS = {
+    "farmerchat": handle_farmerchat,
+}
+
+# Sending Message to Web applications
 def send_message_webapp(
-    driver: webdriver.Chrome,
-    app_name: str,
-    prompt: str,
-    max_retries: int = 3,
-    response_timeout: float = 30.0,
-    stability_window: float = 1.5,
-    poll_interval: float = 0.5,
-    send_button_xpath: str | None = None,  # optional: prefer click if UI uses a send button
-) -> str:
-    """
-    Robust send-and-wait that detects both appended responses and in-place updates.
-    Returns only the single final response message (most-recent changed/added element).
-    """
+    driver,
+    app_name,
+    prompt=None,
+    max_retries=3,
+):
 
-    app_cfg = load_xpaths()["applications"][app_name.lower()]
-    chat_cfg = app_cfg["ChatPage"]
+    app = app_name.lower()
+    handler = APP_HANDLERS.get(app)
 
-    input_xpath    = chat_cfg.get("prompt_input_box_element")
-    response_xpath = chat_cfg.get("agent_response_element")
+    if not handler:
+        raise ValueError(f"Unsupported application: {app}")
 
-    if not input_xpath or not response_xpath:
-        logger.error(f"{app_name} ChatPage config incomplete: {chat_cfg}")
-        return "No response received"
 
-    # --- helpers (ensure interactable, clear, type) ---
-    def _ensure_input_interactable(timeout=10):
-        box = WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((By.XPATH, input_xpath))
-        )
-        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", box)
-        for _ in range(4):
-            try:
-                box.click()
-                return box
-            except (WebDriverException, InvalidElementStateException):
-                try:
-                    driver.execute_script("arguments[0].focus();", box)
-                except Exception:
-                    pass
-                time.sleep(0.2)
-        try:
-            ActionChains(driver).move_to_element(box).click().perform()
-            return box
-        except Exception as e:
-            raise TimeoutException(f"Input element not interactable: {e}")
-
-    def _clear_input(box) -> bool:
-        try:
-            box.clear()
-            time.sleep(0.08)
-            val = (box.get_attribute("value") or "").strip()
-            contenteditable = box.get_attribute("contenteditable")
-            inner = ""
-            if contenteditable == "true" or not val:
-                inner = (box.get_attribute("innerText") or box.get_attribute("textContent") or "").strip()
-            if val == "" and (contenteditable != "true" or inner == ""):
-                return True
-        except Exception:
-            pass
-        # JS fallback
-        try:
-            driver.execute_script(
-                "arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input', {bubbles:true})); arguments[0].dispatchEvent(new Event('change', {bubbles:true}));",
-                box,
-            )
-            time.sleep(0.06)
-            val = (box.get_attribute("value") or "").strip()
-            inner = (box.get_attribute("innerText") or box.get_attribute("textContent") or "").strip()
-            if val == "" and inner == "":
-                return True
-        except Exception:
-            pass
-        try:
-            driver.execute_script(
-                "arguments[0].innerText = ''; arguments[0].textContent = ''; arguments[0].dispatchEvent(new Event('input', {bubbles:true}));",
-                box,
-            )
-            time.sleep(0.06)
-            inner = (box.get_attribute("innerText") or box.get_attribute("textContent") or "").strip()
-            if inner == "":
-                return True
-        except Exception:
-            pass
-        logger.debug("Unable to fully clear input element prior to sending.")
-        return False
-
-    def _type_into_input(box, text):
-        try:
-            for chunk in split_message(text):
-                box.send_keys(chunk)
-                box.send_keys(Keys.SHIFT + Keys.RETURN)
-                time.sleep(0.15)
-            # final Enter -- if UI has a send button we will click it instead later
-            box.send_keys(Keys.RETURN)
-            return
-        except (InvalidElementStateException, WebDriverException) as e:
-            logger.debug(f"send_keys failed, falling back to JS. Error: {e}")
-            try:
-                set_js = (
-                    "arguments[0].value = arguments[1];"
-                    "arguments[0].dispatchEvent(new Event('input', {bubbles:true}));"
-                    "arguments[0].dispatchEvent(new Event('change', {bubbles:true}));"
-                )
-                driver.execute_script(set_js, box, text)
-                ActionChains(driver).move_to_element(box).send_keys(Keys.RETURN).perform()
-                return
-            except Exception as e2:
-                logger.error(f"Fallback JS typing failed: {e2}")
-                raise
-
-    # --- element snapshot helpers (index-aware) ---
-    def _snapshot_texts() -> list[str]:
-        """Return current list of element texts (stripped) for all matched response elements."""
-        try:
-            elems = driver.find_elements(By.XPATH, response_xpath)
-        except Exception:
-            return []
-        texts = []
-        for el in elems:
-            try:
-                texts.append((el.text or "").strip())
-            except StaleElementReferenceException:
-                texts.append("")  # conservative fallback
-        return texts
-
-    def _find_changed_index(pre_list: list[str], cur_list: list[str]) -> int | None:
-        """
-        Return the index of the first changed element (text differs) OR index of first appended element.
-        If nothing changed, return None.
-        """
-        # appended?
-        if len(cur_list) > len(pre_list):
-            return len(cur_list) - 1
-        # changed in-place?
-        common = min(len(pre_list), len(cur_list))
-        for i in range(common):
-            if pre_list[i] != cur_list[i]:
-                return i
-        return None
-
-    def _wait_for_change_and_stability(pre_snapshot: list[str]) -> str | None:
-        """
-        Wait until a change is detected (append or in-place update) and then wait for it to stabilize.
-        Returns the stable text of the changed/added element, or None on timeout.
-        """
-        start_time = time.time()
-        # Phase 1: wait for any change
-        changed_index = None
-        cur_snapshot = pre_snapshot
-        while time.time() - start_time < response_timeout:
-            cur_snapshot = _snapshot_texts()
-            changed_index = _find_changed_index(pre_snapshot, cur_snapshot)
-            if changed_index is not None:
-                logger.debug(f"[{app_name}] Detected change at index {changed_index} (pre_count={len(pre_snapshot)} cur_count={len(cur_snapshot)})")
-                break
-            time.sleep(poll_interval)
-
-        if changed_index is None:
-            return None
-
-        # Phase 2: wait for stability of that element's text
-        last_text = cur_snapshot[changed_index] if changed_index < len(cur_snapshot) else ""
-        last_change = time.time()
-        while time.time() - start_time < response_timeout:
-            time.sleep(poll_interval)
-            cur_snapshot = _snapshot_texts()
-            # if changed_index disappeared, try to treat last element as the target
-            if changed_index >= len(cur_snapshot):
-                # element removed? return most-recent last element if present
-                if cur_snapshot:
-                    candidate = cur_snapshot[-1]
-                else:
-                    candidate = last_text
-            else:
-                candidate = cur_snapshot[changed_index]
-
-            if candidate != last_text:
-                last_text = candidate
-                last_change = time.time()
-                logger.debug(f"[{app_name}] Change detected; waiting for stability. New text len={len(last_text)}")
-                continue
-
-            # unchanged since last poll -> check stability window
-            wait_time = time.time() - last_change
-            if wait_time >= stability_window:
-                return last_text.strip()
-        # timed out, return last seen
-        return last_text.strip()
-
-    # -------------- main retry loop -------------- #
-    last_exception = None
     for attempt in range(1, max_retries + 1):
+
         try:
-            if not check_and_recover_connection(driver):
-                return "No response: Internet unavailable"
-
-            logger.info(f"[{app_name}] Attempt {attempt}: preparing to send prompt.")
-            logger.info(f"Sending prompt to the bot: {prompt}")
-
-            # Baseline snapshot BEFORE sending (index-aware)
-            pre_snapshot = _snapshot_texts()
-            logger.debug(f"[{app_name}] pre_snapshot count={len(pre_snapshot)}; preview={pre_snapshot[-1] if pre_snapshot else None}")
-
-            # Ensure input is interactable and cleared before every attempt
-            box = _ensure_input_interactable(timeout=12)
-            cleared = _clear_input(box)
-            if not cleared:
-                logger.debug(f"[{app_name}] input not verified cleared (attempt {attempt}); proceeding anyway.")
-
-            # Type the prompt (primary) and optionally click send-button if provided
-            _type_into_input(box, prompt)
-            if send_button_xpath:
-                try:
-                    btn = driver.find_element(By.XPATH, send_button_xpath)
-                    if btn.is_displayed() and btn.is_enabled():
-                        btn.click()
-                        logger.debug(f"[{app_name}] Clicked send button.")
-                except Exception as e:
-                    logger.debug(f"[{app_name}] send_button click failed: {e}")
-
-            # Wait for any change (append or update) and for it to stabilize
-            start_wait = time.time()
-            final_text = _wait_for_change_and_stability(pre_snapshot)
-            elapsed = time.time() - start_wait
-
-            if final_text:
-                logger.info(f"[{app_name}] Received final response (len={len(final_text)})")
-                logger.info("(Waited: %.2fs) Received response from %s: %s", elapsed, app_name, final_text)
-                return final_text
-
-            logger.warning(f"[{app_name}] No new response after {response_timeout}s (attempt {attempt}).")
+            if not check_and_recover_connection():
+                return {
+                    "type": "error",
+                    "content": "No internet connection"
+                }
+            
+            return handler(driver, prompt)
 
         except Exception as e:
-            last_exception = e
-            logger.exception(f"[{app_name}] attempt {attempt}/{max_retries} raised exception: {e}")
-            # save minimal debug info (counts + last exception)
-            try:
-                cur_count = len(driver.find_elements(By.XPATH, response_xpath))
-            except Exception:
-                cur_count = -1
-            logger.error(f"[{app_name}] Debug: response_xpath matches {cur_count} elements")
-            # (optional) save screenshot / page source here if you want deeper debug
 
-        # small backoff before retry
-        if attempt < max_retries:
-            time.sleep(1.2)
+            logger.warning(f"[{app}] attempt {attempt} failed: {e}")
 
-    # final failure
-    if last_exception:
-        logger.error(f"[{app_name}] Last exception before giving up: {traceback.format_exception_only(type(last_exception), last_exception)}")
-    return "No response received"
+            if attempt == max_retries:
+                logger.error(f"[{app}] All {max_retries} attempts failed")
+                return {
+                    "type": "error",
+                    "content": f"Max retries reached for {app}: {str(e)}"
+                }
+
+            time.sleep(1.5)
+
+# ------------------------------------------------------------
+# WAIT FOR TEXT RESPONSE (NORMAL DOM)
+# ------------------------------------------------------------
+
+def wait_for_text_response(driver, xpath, timeout=60, stable_time=2):
+
+    start = time.time()
+    last_text = ""
+    last_change = time.time()
+
+    while time.time() - start < timeout:
+
+        nodes = driver.find_elements(By.XPATH, xpath)
+
+        if nodes:
+            # Collect all visible text nodes
+            full_text = " ".join(
+                n.text.strip() for n in nodes if n.text.strip()
+            )
+
+            if full_text and full_text != last_text:
+                last_text = full_text
+                last_change = time.time()
+                logger.info(
+                    f"(Waited:{int(time.time() - start)}) "
+                    f"Received: {full_text}"
+                )
+
+            # Return only when text has stopped changing
+            if last_text and (time.time() - last_change) > stable_time:
+                return last_text
+
+        time.sleep(0.5)
+
+    raise TimeoutException("Response timeout")
+
+# ------------------------------------------------------------
+# WAIT FOR TEXT RESPONSE (SHADOW DOM)
+# ------------------------------------------------------------
+
+def wait_for_new_shadow_text(driver, shadow_host, selector, initial_count, timeout=60, stable_time=3, poll_interval=0.5):
+
+    start = time.time()
+    last_text = ""
+    last_change = time.time()
+    first_text_time = None 
+
+    while time.time() - start < timeout:
+
+        result = driver.execute_script("""
+            const host = arguments[0];
+            const sel = arguments[1];
+            const nodes = host.shadowRoot.querySelectorAll(sel);
+
+            return {
+                count: nodes.length,
+                text: nodes.length ? nodes[nodes.length-1].textContent : ""
+            };
+        """, shadow_host, selector)
+
+        # Wait until a NEW message appears
+        if result["count"] <= initial_count:
+            time.sleep(0.2)
+            continue
+
+        text = (result["text"] or "").strip()
+
+        if text != last_text:
+            last_text = text
+            last_change = time.time()
+            # Log streaming progress
+            logger.debug(
+                f"(Waited:{int(time.time()-start)}) "
+                f"Streaming: {text[:50]}..."
+            )
+
+        # Record when first text appeared
+        if text and first_text_time is None:
+            first_text_time = time.time()
+
+        # Wait until minimum time passed AND text stopped changing
+        if (
+            text and
+            first_text_time and
+            (time.time() - first_text_time) > 1 and       # min 1s after first text
+            (time.time() - last_change) > stable_time      # text stopped changing
+        ):
+            logger.info(
+                f"(Waited:{int(time.time() - start)}) "
+                f"Received: {text}"
+            )
+            return text
+
+        time.sleep(poll_interval)   # configurable poll interval
+
+    raise TimeoutException("New shadow response timeout")
+
+
+# ------------------------------------------------------------
+# SHADOW HOST DISCOVERY
+# ------------------------------------------------------------
+
+def get_shadow_host(driver, iframe_selector, host_selector=None):
+
+    frames = driver.find_elements(By.CSS_SELECTOR, iframe_selector)
+
+    if frames:
+        driver.switch_to.frame(frames[0])
+
+    if host_selector:
+        # Target a specific shadow host by CSS selector
+        host = driver.execute_script("""
+            const el = document.querySelector(arguments[0]);
+            return el && el.shadowRoot ? el : null;
+        """, host_selector)
+        logger.info(f"Shadow host found via selector: {host_selector}")
+    else:
+        # Fallback — first shadow host found
+        host = driver.execute_script("""
+            return Array.from(document.querySelectorAll('*'))
+            .find(el => el.shadowRoot);
+        """)
+        logger.info("Shadow host found via fallback scan")
+
+    if not host:
+        raise RuntimeError("Shadow host not found")
+
+    return host

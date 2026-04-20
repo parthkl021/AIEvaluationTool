@@ -1697,6 +1697,9 @@ class DB:
                         #session.add(new_testcase)
                 
                 if len(new_testcases) == 0:
+                    # Existing testcase->metric associations may have been appended above.
+                    # Commit those relationship updates before returning.
+                    session.commit()
                     self.logger.debug(f"No new test cases to add for metric '{metric.metric_name}'.")
                     return True
                 
@@ -1997,10 +2000,10 @@ class DB:
                     .first()
                 
                 # URL uniqueness validation
-                if target.target_url:
-                    existing_url = session.query(Targets).filter(Targets.target_url == target.target_url).first()
-                    if existing_url:
-                        raise ValueError(f"Target with URL '{target.target_url}' already exists.")
+                # if target.target_url:
+                #     existing_url = session.query(Targets).filter(Targets.target_url == target.target_url).first()
+                #     if existing_url:
+                #         raise ValueError(f"Target with URL '{target.target_url}' already exists.")
 
                 if target.target_name:
                     existing_name = session.query(Targets).filter(Targets.target_name == target.target_name).first()
@@ -3585,6 +3588,7 @@ class DB:
                              plan_name=result.plan.plan_name,
                              status=getattr(result, "testcase_status"),
                              detail_id=detail_id)
+        
 
     def get_run_details_by_run_id(self, run_id: int) -> list[RunDetail]:
         with self.Session() as session:
@@ -3602,6 +3606,7 @@ class DB:
                 )
                 for r in results
             ]                         
+        
         
     def add_or_update_testrun_detail(self, run_detail: RunDetail) -> int:
         """

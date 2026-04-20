@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.table import Table
 from datetime import datetime
 import randomname  # Importing the randomname library for generating random names
+from pathlib import Path
 
 sys.path.append(os.path.dirname(__file__) + "/../../")  # Adjust the path to include the "lib" directory
 
@@ -103,11 +104,13 @@ def main():
         return
     
     # Load configuration from the specified file if provided
+    BASE_DIR = Path(__file__).resolve().parents[3]
+    config_path = BASE_DIR / "config.json"
     if args.config:
-        if not os.path.exists(args.config):
+        if not os.path.exists(config_path):
             logger.error(f"Configuration file '{args.config}' does not exist.")
             return
-        with open(args.config, 'r') as config_file:
+        with open(config_path, 'r') as config_file:
             try:
                 config = json.load(config_file)
             except json.JSONDecodeError as e:
@@ -116,7 +119,13 @@ def main():
     else:
         logger.error("No configuration file provided.")
         return
-    
+    if config['interface_manager']['docker']:
+        interface_manager_url = config.get("interface_manager", {}).get("base_url", "http://interface-manager:8000")
+        selenium_mode = config.get("selenium_mode", {}).get("selenium_mode", "remote")
+    else:
+        interface_manager_url = "http://localhost:8000"
+        selenium_mode = config.get("selenium_mode", {}).get("selenium_mode", "local")
+
     # setting up the database connection
     # db_url = f"mariadb+mariadbconnector://{config['database']['user']}:{config['database']['password']}@{config['database']['host']}:{config['database']['port']}/{config['database']['database']}"
 
@@ -433,12 +442,13 @@ def main():
                     db.add_or_update_testrun_detail(rundetail)
 
                     # Initialize the InterfaceManagerClient with the provided configuration
-                    client = InterfaceManagerClient(base_url="http://localhost:8000" ,application_type=application_type, agent_name=agent_name)
+                    client = InterfaceManagerClient(base_url=interface_manager_url ,application_type=application_type, agent_name=agent_name)
                     client.sync_config({
                         "application_name": application_name,
                         "application_type": application_type,
                         "agent_name": agent_name,
-                        "application_url": application_url
+                        "application_url": application_url,
+                        "selenium_mode": selenium_mode
                     })
                     client.apply_server_config()
 
@@ -447,7 +457,20 @@ def main():
                         db.add_or_update_conversation(conversation=conv)
 
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.
@@ -489,7 +512,7 @@ def main():
                     return
                 
                 # Verify that the metric is part of the test plan
-                is_metric_in_plan = db.is_metric_in_testplan(metric_name=metric_name, plan_name=plan_name)
+                is_metric_in_plan = db.is_metric_in_testplan(metric_name=metric_name.split("/")[0], plan_name=plan_name)
                 if not is_metric_in_plan:
                     logger.error(f"Metric '{metric_name}' (ID: {args.metric_id}) is not part of the test plan '{plan_name}' (ID: {args.plan_id}).")
                     return
@@ -518,12 +541,13 @@ def main():
                 db.add_or_update_testrun(run=run)
 
                 # Initialize the InterfaceManagerClient with the provided configuration
-                client = InterfaceManagerClient(base_url="http://localhost:8000" ,application_type=application_type, agent_name=agent_name)
+                client = InterfaceManagerClient(base_url=interface_manager_url ,application_type=application_type, agent_name=agent_name)
                 client.sync_config({
                     "application_name": application_name,
                     "application_type": application_type,
                     "agent_name": agent_name,
-                    "application_url": application_url
+                    "application_url": application_url,
+                    "selenium_mode": selenium_mode
                 })
                 client.apply_server_config()
 
@@ -561,7 +585,20 @@ def main():
                         db.add_or_update_conversation(conversation=conv)
 
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.
@@ -614,12 +651,13 @@ def main():
                 db.add_or_update_testrun(run=run)
 
                 # Initialize the InterfaceManagerClient with the provided configuration
-                client = InterfaceManagerClient(base_url="http://localhost:8000" ,application_type=application_type, agent_name=agent_name)
+                client = InterfaceManagerClient(base_url=interface_manager_url ,application_type=application_type, agent_name=agent_name)
                 client.sync_config({
                     "application_name": application_name,
                     "application_type": application_type,
                     "agent_name": agent_name,
-                    "application_url": application_url
+                    "application_url": application_url,
+                    "selenium_mode": selenium_mode
                 })
                 client.apply_server_config()
 
@@ -658,7 +696,20 @@ def main():
 
                         # send the prompt to the agent via the interface manager client
                         response_from_agent = client.chat(chat_id = testcase.testcase_id, prompt_list=[message_to_agent])
-                        agent_response = response_from_agent.json().get("response", "")
+                        data = response_from_agent.json().get("response")
+                        agent_response = ""
+
+                        if isinstance(data, list) and data:
+                            data = data[0].get("response", {})
+
+                        if isinstance(data, dict):
+                            if data.get("type") == "text":
+                                agent_response = data.get("content", "")
+                            elif data.get("type") == "audio":
+                                agent_response = data.get("file", "")
+                            else:
+                                agent_response = ""
+
 
                         # Check if the response is empty or indicates a chat not found
                         # Here, we will leave the Conversation entry dangling in the DB to indicate the the conversation was not successful.

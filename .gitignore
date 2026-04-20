@@ -22,7 +22,7 @@ test.py
 improvement_eval.py
 .deepeval
 saved_evaluations
-*.png
+# *.png
 new_fairness_stereotype_recognition.py
 *.pkl
 .strategy_*.json
@@ -57,3 +57,6 @@ src/app/TDMS/front-end/*.sw?
 *.sqlite3
 chroma_langchain_db/
 data/AIEvaluationData.db
+
+reports/
+chrome-data/
