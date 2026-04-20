@@ -58,8 +58,9 @@ OPENAI_API_KEY=
 Create `src/app/TDMS/front-end/.env`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:7250
-VITE_AUTH_SERVICE_URL=http://localhost:7500
+VITE_API_BASE_URL="http://localhost:7000"
+VITE_AUTH_SERVICE_URL="http://localhost:7500"
+VITE_TEST_RUNS_HOME_URL="http://localhost:3000"
 ```
 
 ### Dashboard frontend `.env`
@@ -67,8 +68,11 @@ VITE_AUTH_SERVICE_URL=http://localhost:7500
 Create `src/app/TestCaseExecutorDashboard/front-end/.env`:
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:7000
-REACT_APP_AUTH_SERVICE_URL=http://localhost:7500
+REACT_APP_API_BASE_URL="http://localhost:7000"
+REACT_APP_AUTH_SERVICE_URL="http://localhost:7500"
+REACT_APP_TDMS_API_BASE_URL="http://localhost:7250"
+REACT_APP_TEST_DATA_URL="http://localhost:8080/dashboard"
+REACT_APP_USER_LIST_URL="http://localhost:8080/users"
 ```
 
 ### Auth service `.env`
@@ -76,9 +80,8 @@ REACT_APP_AUTH_SERVICE_URL=http://localhost:7500
 Create `src/app/auth_service/.env`:
 
 ```env
-
-TCE_APP_URL=http://localhost:3000
-TDMS_APP_URL=http://localhost:8080/dashboard
+TCE_APP_URL="http://localhost:3000"
+TDMS_APP_URL="http://localhost:8080/dashboard"
 
 ```
 
