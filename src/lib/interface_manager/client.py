@@ -138,21 +138,28 @@ class InterfaceManagerClient:
             )
 
         # If application_url is local → LOCAL provider
-        if self.local_llm_base_url.startswith("http://localhost") or self.local_llm_base_url.startswith("http://127.0.0.1") or self.local_llm_base_url.startswith("http://host.docker.internal"):
-            self.logger.info("Detected LOCAL provider via application_url")
-            return "LOCAL"
-
         model = self.agent_name.lower()
 
+        # Check model name first (takes priority over URL)
         if model.startswith("gemini"):
             return "GEMINI"
 
-        if model.startswith("gpt") or model.startswith("o"):
+        if model.startswith("gpt") or model.startswith("o1") or model.startswith("o3") or model.startswith("o4"):
             return "OPENAI"
+
+        # Fall back to URL-based detection for local models
+        local_url = getattr(self, "local_llm_base_url", None)
+        if local_url and (
+            local_url.startswith("http://localhost")
+            or local_url.startswith("http://127.0.0.1")
+            or local_url.startswith("http://host.docker.internal")
+        ):
+            self.logger.info("Detected LOCAL provider via application_url")
+            return "LOCAL"
 
         raise RuntimeError(
             f"Unable to determine provider for model '{self.agent_name}'. "
-            f"base_url='{self.base_url}'"
+            f"local_llm_base_url='{getattr(self, 'local_llm_base_url', None)}'"
         )
 
 

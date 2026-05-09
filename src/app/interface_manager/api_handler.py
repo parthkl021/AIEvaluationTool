@@ -1,5 +1,14 @@
 import time
+import os
 from typing import Dict, Any, List
+
+from dotenv import load_dotenv
+
+# Load the strategy .env which contains OPENAI_API_KEY and other keys
+_STRATEGY_ENV = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "lib", "strategy", ".env")
+)
+load_dotenv(_STRATEGY_ENV)
 
 from context import APIRuntimeContext
 from logger import get_logger
@@ -100,13 +109,18 @@ def _run_openai(ctx: APIRuntimeContext, prompt: str) -> str:
 
     client = OpenAI()
 
-    response = client.chat.completions.create(
-        model=ctx.agent_name,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=ctx.temperature,
-        max_tokens=ctx.max_tokens,
-        top_p=ctx.top_p,
-    )
+    kwargs = {
+        "model": ctx.agent_name,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if ctx.temperature is not None:
+        kwargs["temperature"] = ctx.temperature
+    if ctx.max_tokens is not None:
+        kwargs["max_tokens"] = ctx.max_tokens
+    if ctx.top_p is not None:
+        kwargs["top_p"] = ctx.top_p
+
+    response = client.chat.completions.create(**kwargs)
 
     return response.choices[0].message.content.strip()
 

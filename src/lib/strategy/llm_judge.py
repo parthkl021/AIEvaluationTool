@@ -2,7 +2,7 @@ import warnings
 import os
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import GEval
-from .utils_new import FileLoader, CustomOllamaModel
+from .utils_new import FileLoader, CustomOllamaModel, CustomOpenAIModel
 from lib.data import TestCase, Conversation
 from .strategy_base import Strategy
 from .logger import get_logger
@@ -13,24 +13,43 @@ FileLoader._load_env_vars(__file__)
 logger = get_logger("llm_judge")
 dflt_vals = FileLoader._to_dot_dict(__file__, os.getenv("DEFAULT_VALUES_PATH"), simple=True, strat_name="llm_judge")
 
+
+def _build_judge_model(model_name: str):
+    """Return the appropriate DeepEval model wrapper based on the model name."""
+    name_lower = model_name.lower()
+    if name_lower.startswith("gpt") or name_lower.startswith("o1") or name_lower.startswith("o3") or name_lower.startswith("o4"):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not set in environment.")
+        logger.info("Using OpenAI model for LLM judge: %s", model_name)
+        return CustomOpenAIModel(model_name=model_name, api_key=api_key)
+    elif name_lower.startswith("gemini"):
+        raise NotImplementedError("Gemini judge model is not yet supported.")
+    else:
+        base_url = os.getenv("OLLAMA_URL")
+        if not base_url:
+            raise RuntimeError("OLLAMA_URL is not set in environment.")
+        logger.info("Using Ollama model for LLM judge: %s", model_name)
+        return CustomOllamaModel(model_name=model_name, url=base_url)
+
+
 class LLMJudgeStrategy(Strategy):
     def __init__(self, name: str = "llm_judge", **kwargs) -> None:
         super().__init__(name=name)
-        
+
         self.metric_name = kwargs.get("metric_name", dflt_vals.metric_name)
-        self.model_names = dflt_vals.model_names #os.getenv("LLM_AS_JUDGE_MODEL")
-        self.base_url = os.getenv("OLLAMA_URL")
-        self.models = [CustomOllamaModel(model_name=model_name, url=self.base_url) for model_name in self.model_names]
+        # Allow env var override; fall back to defaults.json
+        env_model = os.getenv("LLM_AS_JUDGE_MODEL")
+        self.model_names = [env_model] if env_model else dflt_vals.model_names
+        self.models = [_build_judge_model(m) for m in self.model_names]
         self.eval_type = name.split("_")[-1] if len(name.split("_")) > 2 else dflt_vals.eval_type
-        
+
         self.judge_prompt = dflt_vals.judge_prompt
         self.system_prompt = dflt_vals.sys_prompt
         self.prompt = dflt_vals.prompt
 
         if not self.model_names:
             logger.warning("LLM_AS_JUDGE_MODEL is not set in default values.")
-        if not self.base_url:
-            logger.warning("OLLAMA_URL is not set in environment.")
 
     def evaluate(self, testcase:TestCase, conversation:Conversation):
         logger.debug("Evaluating agent response using LLM judge...")

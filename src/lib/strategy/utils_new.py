@@ -10,6 +10,7 @@ from deepeval.metrics.g_eval.schema import Steps, ReasonScore
 from ollama import Client, AsyncClient
 from deepeval.models.base_model import DeepEvalBaseLLM
 from typing import Optional, List
+from openai import OpenAI
 
 logger = get_logger("utils_new")
 
@@ -188,6 +189,38 @@ class CustomOllamaModel(DeepEvalBaseLLM):
         return self.model_name
 
 
+class CustomOpenAIModel(DeepEvalBaseLLM):
+    def __init__(self, model_name: str, api_key: str, *args, **kwargs):
+        self.model_name = model_name
+        self.client = OpenAI(api_key=api_key)
+        self.score_reason = None
+        self.steps = None
+
+    def generate(self, input: str, *args, **kwargs) -> str:
+        schema_ = kwargs.get("schema")
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": input}],
+            response_format={"type": "json_object"},
+        )
+        raw = json.loads(response.choices[0].message.content)
+        result = schema_(**raw)
+        if schema_ is ReasonScore:
+            self.score_reason = {"Score": result.score, "Reason": result.reason}
+        if schema_ is Steps:
+            self.steps = result.steps
+        return result
+
+    async def a_generate(self, input: str, *args, **kwargs) -> str:
+        return self.generate(input, *args, **kwargs)
+
+    def load_model(self, *args, **kwargs):
+        return None
+
+    def get_model_name(self, *args, **kwargs):
+        return self.model_name
+
+
 class OllamaConnect:
     
     FileLoader._load_env_vars(__file__)
@@ -228,6 +261,29 @@ class OllamaConnect:
                 else:
                     logger.error("Response does not contain the required fields or is not in the correct format.")
             tries -= 1
+
+        # OpenAI fallback when Ollama is unavailable or returns no valid response
+        if not resp_in_format:
+            openai_key = os.getenv("OPENAI_API_KEY")
+            openai_model = os.getenv("LLM_AS_JUDGE_MODEL", "gpt-4o")
+            if openai_key and openai_model.startswith("gpt"):
+                try:
+                    logger.info("Ollama unavailable - falling back to OpenAI (%s) for summary generation.", openai_model)
+                    client = OpenAI(api_key=openai_key)
+                    field_hint = ", ".join(f'"{f}": "<value>"' for f in fields)
+                    response = client.chat.completions.create(
+                        model=openai_model,
+                        messages=[{"role": "user", "content": f"{text}\n\nRespond ONLY with a JSON object containing these fields: {{{field_hint}}}"}],
+                        response_format={"type": "json_object"},
+                    )
+                    final = json.loads(response.choices[0].message.content)
+                    if OllamaConnect.has_correct_format(final, fields):
+                        resp_in_format.append(final)
+                    else:
+                        logger.error("OpenAI fallback response missing required fields: %s", fields)
+                except Exception as e:
+                    logger.error("OpenAI fallback also failed: %s", e)
+
         return resp_in_format
     
     @staticmethod

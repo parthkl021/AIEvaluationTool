@@ -1,0 +1,26 @@
+{
+    "db": {
+        "engine": "sqlite",
+        "file": "AIEvaluationData.db"
+    },
+    "examples":{
+        "db_1":{
+            "engine":"mariadb",
+            "host": "localhost",
+            "port": 3306,
+            "user": "root",
+            "password": "password",
+            "database": "test"
+        },
+        "db_2":{
+            "engine":"sqlite",
+            "file": "example.db"
+        }
+    },
+    "target": {
+        "application_type": "API",
+        "application_name": "gpt-5.4",
+        "application_url": "https://api.openai.com/v1",
+        "agent_name": "gpt-5.4"
+    }
+}

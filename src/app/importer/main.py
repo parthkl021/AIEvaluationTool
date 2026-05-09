@@ -84,7 +84,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # connecting to the database
-config = json.load(open(args.config, 'r'))
+config = json.load(open(args.config, 'r', encoding='utf-8'))
 # db_url = "mariadb+mariadbconnector://{user}:{password}@{host}:{port}/{database}".format(
 #     user=config['db']['user'],
 #     password=config['db']['password'],
@@ -124,13 +124,13 @@ elif engine == "mariadb":
 else:
     raise ValueError(f"Unsupported database engine: {engine}")
 
-plans = json.load(open(config['files']['plans'], 'r'))
+plans = json.load(open(config['files']['plans'], 'r', encoding='utf-8'))
 #testcases -> basically the data points
-prompts = json.load(open(config['files']['testcases'], 'r'))
+prompts = json.load(open(config['files']['testcases'], 'r', encoding='utf-8'))
 
 db = DB(db_url=db_url, debug=args.orm_debug)
 
-strategies = json.load(open(config["files"]["strategies"], "r"))
+strategies = json.load(open(config["files"]["strategies"], "r", encoding='utf-8'))
 
 # import all the strategies.
 logger.debug("Importing strategies...")
@@ -361,3 +361,11 @@ tgt = Target(target_name="FarmerChat",
              target_domain="agriculture",
              target_languages=["english"])
 target_id = db.add_or_get_target(target = tgt)
+
+tgt = Target(target_name="gpt-5.4",
+             target_type="API",
+             target_url="https://api.openai.com/v1",
+             target_description="GPT-4o is OpenAI's flagship multimodal model for advanced natural language understanding and generation.",
+             target_domain="general",
+             target_languages=["english"])
+target_id = db.add_or_get_target(target=tgt)

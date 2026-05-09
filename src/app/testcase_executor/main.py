@@ -104,11 +104,10 @@ def main():
         return
     
     # Load configuration from the specified file if provided
-    BASE_DIR = Path(__file__).resolve().parents[3]
-    config_path = BASE_DIR / "config.json"
     if args.config:
+        config_path = args.config if os.path.isabs(args.config) else os.path.join(os.getcwd(), args.config)
         if not os.path.exists(config_path):
-            logger.error(f"Configuration file '{args.config}' does not exist.")
+            logger.error(f"Configuration file '{config_path}' does not exist.")
             return
         with open(config_path, 'r') as config_file:
             try:
@@ -119,7 +118,7 @@ def main():
     else:
         logger.error("No configuration file provided.")
         return
-    if config['interface_manager']['docker']:
+    if config.get('interface_manager', {}).get('docker', False):
         interface_manager_url = config.get("interface_manager", {}).get("base_url", "http://interface-manager:8000")
         selenium_mode = config.get("selenium_mode", {}).get("selenium_mode", "remote")
     else:
