@@ -191,6 +191,36 @@ class PromptEvaluator:
         Expected Bot → {{ turn3.response }}
         """
     
+    async def suggest_metric_async(self, prompt: str, response: str) -> str:
+        metrics_list = "\n".join(
+            f"- {m}: {self.get_explanation(metric_name=m)[:]}"
+            for m in self.metric_to_submetrics
+        )
+        content = (
+            f"You are an LLM evaluation expert. Given the user prompt and expected bot response below, "
+            f"identify the single most appropriate evaluation metric from this list:\n\n"
+            f"{metrics_list}\n\n"
+            f"User Prompt: {prompt}\n"
+            f"Expected Response: {response}\n\n"
+            f"Reply with ONLY the metric name exactly as listed, followed by one sentence explaining why."
+        )
+        loop = asyncio.get_event_loop()
+
+        def _call():
+            api_key = key_manager.get_key()
+            client = genai.Client(api_key=api_key)
+            return client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=content,
+                config=types.GenerateContentConfig(temperature=0.2, top_p=0.5),
+            )
+
+        resp = await loop.run_in_executor(None, _call)
+        try:
+            return resp.candidates[0].content.parts[0].text.strip()
+        except Exception:
+            return "Could not determine metric."
+
     async def evaluate_async(self, content: str) -> str:
         loop = asyncio.get_event_loop()
 
@@ -309,9 +339,9 @@ for t in range(turns):
     inputs.append({"prompt": p, "response": r})
 
 # Action Buttons
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
-    if st.button("🔍 Evaluate", type="primary", width="stretch"):
+    if st.button("🔍 Evaluate", type="primary", use_container_width=True):
         with st.spinner("Evaluating..."):
             try:
                 # Build prompt
@@ -338,4 +368,16 @@ with col1:
             except Exception as e:
                 st.error(f"Evaluation failed: {e}")
 with col2:
-     st.button("Clear", type="secondary", on_click=clear_inputs, width="stretch")
+    if st.button("💡 Suggest Metric", type="secondary", use_container_width=True):
+        first_prompt = inputs[0]["prompt"].strip() if inputs else ""
+        first_response = inputs[0]["response"].strip() if inputs else ""
+        if not first_prompt:
+            st.warning("Enter at least a User Prompt in Turn 1 to get a suggestion.")
+        else:
+            with st.spinner("Analysing your test case..."):
+                suggestion = asyncio.run(
+                    evaluator.suggest_metric_async(first_prompt, first_response)
+                )
+            st.info(f"**Suggested Metric:** {suggestion}")
+with col3:
+     st.button("Clear", type="secondary", on_click=clear_inputs, use_container_width=True)
