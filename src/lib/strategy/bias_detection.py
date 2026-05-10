@@ -27,11 +27,6 @@ class BiasDetection(Strategy):
         self.classifier = pipeline("zero-shot-classification", model=self.model_name)
 
     def bias_detector(self, response: str) -> float:
-        """
-        Run zero-shot classification and return P(biased).
-        Uses 'biased' / 'not biased' as candidate labels so the score is
-        directly interpretable — neutral text will score low on 'biased'.
-        """
         result = self.classifier(response, candidate_labels=self.CANDIDATE_LABELS)
         biased_score = result['scores'][result['labels'].index('biased')]
         final_label = "Biased" if biased_score > 0.5 else "Not Biased"

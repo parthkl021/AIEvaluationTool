@@ -19,6 +19,7 @@ from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List
+from rank_bm25 import BM25Okapi
 from .logger import get_logger
 
 logger = get_logger("rag_pipeline")
@@ -34,6 +35,10 @@ class ScrapeCleanStore:
     def __init__(self, **kwargs):
         self.vector_db = kwargs.get("vector_db", "chroma_langchain_db")
         self.embedding_model = kwargs.get("embed_model", "all-minilm")
+        self.max_pages = kwargs.get("max_pages", 2)
+        self.request_timeout = kwargs.get("request_timeout", 5)
+        self.max_tags_per_page = kwargs.get("max_tags_per_page", 150)
+        self.max_chunks_per_source = kwargs.get("max_chunks_per_source", 10)
         self.embeddings = OllamaEmbeddings(
             model = self.embedding_model,
             base_url=os.getenv("OLLAMA_URL")
@@ -44,7 +49,8 @@ class ScrapeCleanStore:
             persist_directory=os.path.join(os.path.dirname(__file__), f"data/{self.vector_db}")
         )
 
-    def top_links(self, query:str, n=3):
+    def top_links(self, query:str, n=None):
+        n = n or self.max_pages
         with DDGS() as ddgs:
             results = ddgs.text(query, max_results=n)
             return [TextData(text=r["body"], href=r["href"], title=r["title"]) for r in results if len(r["body"]) > 100]
@@ -70,8 +76,8 @@ class ScrapeCleanStore:
         length_score = math.log(len(text) + 1) * 200
         sentence_score = text.count(".") * 20
         paragraph_score = text.count("\n") * 5
-        digit_penalty = len(re.findall(r"\d", text)) * 15
-        symbol_penalty = len(re.findall(r"[|/\\=<>_{}<>@#$^*_+=~`[\]]", text)) * 20
+        digit_penalty = len(re.findall(r"\d", text)) * 5
+        symbol_penalty = len(re.findall(r"[|/\\=<>_{}<>@#$^*_+=~`[\]]", text)) * 10
         short_word_pen = len(re.findall(r"\b\w{1,2}\b", text)) * 5
 
         entropy = self.word_entropy(text)
@@ -115,7 +121,16 @@ class ScrapeCleanStore:
     
     def parse_and_score(self, query:str):
         page_info = self.top_links(query)
-        html_pages = [requests.get(l.href, timeout=10, headers=self.create_header()) for l in page_info]
+        html_pages = []
+        valid_page_info = []
+        for link in page_info:
+            try:
+                resp = requests.get(link.href, timeout=self.request_timeout, headers=self.create_header())
+                html_pages.append(resp)
+                valid_page_info.append(link)
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Skipping {link.href}: {e}")
+        page_info = valid_page_info
         text_strainer = bs4.SoupStrainer(["article", "section", "div", "main", "h1", "h2", "h3"])#, class_=[re.compile("content")])
         
         soups = []
@@ -126,15 +141,16 @@ class ScrapeCleanStore:
                 bad.decompose()
             soups.append((soup, info.title, info.href))
 
-        splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap=80, add_start_index=True)
+        # chunk_size=400 to fit all-minilm's 256-token (~400 char) context limit
+        splitter = RecursiveCharacterTextSplitter(chunk_size = 400, chunk_overlap=40, add_start_index=True)
         hash_counter = Counter()
         chunk_counter = itertools.count()
         chunks = []
 
         for soup in soups:
-            for tag in soup[0].find_all(True):
+            for tag in soup[0].find_all(True)[:self.max_tags_per_page]:
                 cleaned_text = self.clean_text(tag.get_text(" ", strip=True))
-                if len(cleaned_text) < 400:
+                if len(cleaned_text) < 150:
                     continue
                 raw_chunks = splitter.split_text(cleaned_text)
                 for c in raw_chunks:
@@ -157,8 +173,7 @@ class ScrapeCleanStore:
     def create_docs(self, page_info:List[TextData], candidates:List[tuple]):
 
         docs = []
-        src_chunk_nums = 20
-        sources_cnt = {i.href : src_chunk_nums for i in page_info}
+        sources_cnt = {i.href : self.max_chunks_per_source for i in page_info}
         seen = set()
 
         while len(candidates):
@@ -188,8 +203,17 @@ class ScrapeCleanStore:
     def main(self, user_query:str):
         page_info, candidates = self.parse_and_score(user_query)
         doc_objects = self.create_docs(page_info, candidates)
-        self.store(doc_objects)
-        return doc_objects
+        # Seed with DDGS snippets as guaranteed-relevant fallback docs
+        snippet_docs = [
+            Document(
+                page_content=info.text,
+                metadata={"source": info.href, "title": info.title}
+            )
+            for info in page_info if info.text
+        ]
+        all_docs = snippet_docs + doc_objects
+        self.store(all_docs)
+        return all_docs
 
 # modules for structured outputs 
 class RAGDecision(BaseModel):
@@ -269,11 +293,42 @@ class RetrieveSummarize:
         query_chain = prompt | self.chat_model.with_structured_output(SearchQuery)
         return query_chain.invoke({"input" : user_prompt}).query
 
+    def _rrf_score(self, rank: int, k: int = 60) -> float:
+        """Reciprocal Rank Fusion score. k=60 is the standard constant."""
+        return 1.0 / (k + rank + 1)
+
+    def hybrid_retrieve(self, query: str, k: int = 5, fetch_k: int = 20) -> List[Document]:
+        """
+        Hybrid retrieval: Dense (Chroma) + BM25 sparse, fused via RRF.
+        Step 1 - Dense: fetch fetch_k candidates from Chroma.
+        Step 2 - BM25: score same candidates by keyword match.
+        Step 3 - RRF: combine both rank lists, return top k.
+        """
+        dense_results = self.vector_store.similarity_search_with_score(query, k=fetch_k)
+        if not dense_results:
+            logger.warning("No documents returned from dense retrieval.")
+            return []
+        docs = [doc for doc, _ in dense_results]
+
+        tokenized_corpus = [doc.page_content.lower().split() for doc in docs]
+        bm25 = BM25Okapi(tokenized_corpus)
+        bm25_scores = bm25.get_scores(query.lower().split())
+        bm25_ranked_indices = sorted(range(len(docs)), key=lambda i: bm25_scores[i], reverse=True)
+
+        rrf = {}
+        for dense_rank, _ in enumerate(dense_results):
+            rrf[dense_rank] = rrf.get(dense_rank, 0.0) + self._rrf_score(dense_rank)
+        for bm25_rank, doc_idx in enumerate(bm25_ranked_indices):
+            rrf[doc_idx] = rrf.get(doc_idx, 0.0) + self._rrf_score(bm25_rank)
+
+        top_indices = sorted(rrf, key=lambda i: rrf[i], reverse=True)[:k]
+        return [docs[i] for i in top_indices]
+
     def make_retrieve_tool(self, vector_store):
         @tool(response_format="content_and_artifact")
         def retrieve_context(query:str):
-            """Retrieve information to help answer a query."""
-            retrieved_docs = vector_store.similarity_search(query, k=5)
+            """Retrieve information to help answer a query using hybrid search."""
+            retrieved_docs = self.hybrid_retrieve(query, k=5)
             serealized = "\n\n".join(
                 (f"Source : {doc.metadata} \n Content:{doc.page_content}")
                 for doc in retrieved_docs
@@ -329,8 +384,10 @@ class RetrieveSummarize:
                 final = re.sub(r"<think>.*?</think>", "", final, re.DOTALL).strip()
             else:
                 if use_db:
-                    retrieve_context = self.make_retrieve_tool(self.vector_store)
-                    context = retrieve_context.invoke({"query" : query})
+                    context = "\n\n".join(
+                        f"Source : {doc.metadata}\nContent: {doc.page_content}"
+                        for doc in self.hybrid_retrieve(query, k=5)
+                    )
                 else:
                     context = self.make_context(retrieved_docs)
                 final = "NA"
