@@ -17,6 +17,7 @@ warnings.filterwarnings("ignore")
 FileLoader._load_env_vars(__file__)
 logger = get_logger("indian_lang_grammatical_check")
 dflt_vals = FileLoader._to_dot_dict(__file__, os.getenv("DEFAULT_VALUES_PATH"), simple=True, strat_name="indian_lang_grammatical_check")
+judge_vals = FileLoader._to_dot_dict(__file__, os.getenv("DEFAULT_VALUES_PATH"), simple=True, strat_name="grammar_teacher_judge")
 
 class IndianLangGrammaticalCheck(Strategy):
     def __init__(self, model=None, tokenizer=None, name="indian_lang_grammatical_check", **kwargs):
@@ -36,11 +37,11 @@ class IndianLangGrammaticalCheck(Strategy):
         except:
             logger.debug("The corrected language is not the same as the original. Scores might get affected.")
         try:
-            self.nlp = stanza.Pipeline(lang1, processors="tokenize, pos, lemma, depparse")
+            self.nlp = stanza.Pipeline(lang1, processors="tokenize,pos,lemma,depparse")
         except:
             try:
                 stanza.download(lang1)
-                self.nlp = stanza.Pipeline(lang1, processors="tokenize, pos, lemma, depparse")
+                self.nlp = stanza.Pipeline(lang1, processors="tokenize,pos,lemma,depparse")
             except:
                 logger.debug(f"Language parser not available for {lang1}. Defaulting to Levenshtein distance for score calculation.")
 
@@ -105,6 +106,17 @@ class IndianLangGrammaticalCheck(Strategy):
             return [corr["corrected"] for corr in corrections]
         else:
             return []
+
+    def judge_grammar(self, original:str, corrected:str) -> float:
+        """Ask the LLM to score grammatical quality as a grammar teacher (0–1)."""
+        prompt = judge_vals.prompt.format(ori=original, corr=corrected)
+        results = OllamaConnect.prompt_model(prompt, judge_vals.reqd_flds, model_names=judge_vals.model_names, options=judge_vals.options)
+        if results:
+            try:
+                return float(results[0]["grammar_score"])
+            except (KeyError, ValueError):
+                logger.warning("Could not parse grammar_score from judge response. Defaulting to 0.5.")
+        return 0.5
     
     def weighted_f1(self, scores:list, weights:list = [0.8, 0.2]): # weights  = [for vector sim, for avg_edit_dist]
         weights = [w / sum(weights) for w in weights] # normalizing so the weights sum to 1
@@ -136,12 +148,12 @@ class IndianLangGrammaticalCheck(Strategy):
         rsn = ""
         if len(corr_sents) > 0:
             for final in corr_sents:
-                # we are taking the embedding for both the sentences using the initial layer of the LLM which captures morpheme and strctural information
                 a1, b1 = self.embed(conversation.agent_response), self.embed(final)
-                sim = self.cosine(a1, b1)
-                ted_sim = self.tree_similarity(conversation.agent_response, final, use_ted=dflt_vals.use_ted)
-                # harmonic mean between the lev distance and the structural vector similarity score
-                score = self.weighted_f1([sim, ted_sim])
+                cos_sim  = self.cosine(a1, b1)
+                ted_sim  = self.tree_similarity(conversation.agent_response, final, use_ted=dflt_vals.use_ted)
+                llm_score = self.judge_grammar(conversation.agent_response, final)
+                # Hybrid: LLM grammar teacher (0.5) + cosine similarity (0.3) + tree/edit distance (0.2)
+                score = llm_score * 0.5 + cos_sim * 0.3 + ted_sim * 0.2
                 scores.append(score)
             final_score = round(float(np.mean(scores)), 3)
             logger.info(f"Grammatical consistency score for the input is : {final_score}")
